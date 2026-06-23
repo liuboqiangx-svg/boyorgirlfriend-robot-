@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import { v4 as uuidv4 } from "uuid";
+import { join } from "path";
 import {
   CharacterProfile,
   CharacterState,
@@ -9,7 +10,8 @@ import {
   User,
 } from "@/types";
 
-const db = new Database("./paper-partner.db");
+const dbPath = join(process.cwd(), "paper-partner.db");
+const db = new Database(dbPath);
 db.pragma("journal_mode = WAL");
 
 export function initDatabase() {
@@ -63,14 +65,16 @@ export function initDatabase() {
   `);
 }
 
-export function getOrCreateUser(name = "主人"): User {
-  const existing = db.prepare("SELECT * FROM users LIMIT 1").get() as
-    | User
-    | undefined;
-  if (existing) return existing;
+export function getOrCreateUser(name = "主人", userId?: string): User {
+  if (userId) {
+    const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(userId) as
+      | User
+      | undefined;
+    if (existing) return existing;
+  }
 
   const user: User = {
-    id: uuidv4(),
+    id: userId ?? uuidv4(),
     name,
     created_at: new Date().toISOString(),
   };
