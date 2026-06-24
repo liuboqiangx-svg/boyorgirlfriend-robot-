@@ -58,6 +58,7 @@ export class ImageService {
     const timer = new PerformanceTimer();
 
     // 记录请求
+    const mode = request.reference_images?.length ? "image_to_image" : "text_to_image";
     this.logger.logRequestStart({
       prompt: request.prompt,
       character_id: request.character_id,
@@ -65,6 +66,8 @@ export class ImageService {
       scene: request.scene,
       size: request.size,
       watermark: request.watermark,
+      reference_images: request.reference_images,
+      mode,
     });
 
     try {
@@ -74,6 +77,9 @@ export class ImageService {
         size: request.size,
         watermark: request.watermark,
         requestId: this.generateRequestId(),
+        // ============ 图生图参数 ============
+        reference_images: request.reference_images,
+        image_prompt: request.image_prompt,
       };
 
       // 调用 Provider

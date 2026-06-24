@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
       scene: body.scene,
       size: body.size,
       watermark: body.watermark !== false,
+      // ============ 图生图参数 ============
+      reference_images: body.reference_images,
+      image_prompt: body.image_prompt,
     };
 
     // 4. 调用服务
@@ -133,6 +136,45 @@ function validateRequest(body: unknown): {
     return {
       code: ERROR_CODES.VALIDATION_ERROR,
       message: `size 必须是以下之一: ${ALLOWED_SIZES.join(", ")}`,
+      type: "validation",
+    };
+  }
+
+  // ============ 图生图参数校验 ============
+  // 校验 reference_images
+  if (req.reference_images !== undefined) {
+    if (!Array.isArray(req.reference_images)) {
+      return {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: "reference_images 必须是数组",
+        type: "validation",
+      };
+    }
+
+    if (req.reference_images.length > 2) {
+      return {
+        code: ERROR_CODES.VALIDATION_ERROR,
+        message: "reference_images 最多2张图片",
+        type: "validation",
+      };
+    }
+
+    for (const url of req.reference_images) {
+      if (typeof url !== "string" || !url.startsWith("http")) {
+        return {
+          code: ERROR_CODES.VALIDATION_ERROR,
+          message: "reference_images 中的每一项必须是有效的 URL",
+          type: "validation",
+        };
+      }
+    }
+  }
+
+  // 校验 image_prompt
+  if (req.image_prompt !== undefined && typeof req.image_prompt !== "string") {
+    return {
+      code: ERROR_CODES.VALIDATION_ERROR,
+      message: "image_prompt 必须是字符串",
       type: "validation",
     };
   }

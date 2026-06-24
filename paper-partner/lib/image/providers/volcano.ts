@@ -58,9 +58,11 @@ export class VolcanoImageProvider implements ImageProvider {
     const requestId = options.requestId || this.generateRequestId();
 
     // 记录请求开始
+    const mode = options.reference_images?.length ? "image_to_image" : "text_to_image";
     this.logger.logRequestStart({
       ...options,
       requestId,
+      mode,
     });
 
     try {
@@ -102,19 +104,39 @@ export class VolcanoImageProvider implements ImageProvider {
 
   /**
    * 构建请求体
+   * 根据是否有 reference_images 判断是文生图还是图生图
    */
   private buildRequestBody(options: ProviderOptions): Record<string, unknown> {
     const size = options.size || "2K";
     const sizeValue = IMAGE_SIZE_MAP[size] || IMAGE_SIZE_MAP["2K"];
 
-    return {
+    const baseBody = {
       model: this.config.model,
-      prompt: options.prompt,
       sequential_image_generation: "disabled",
       response_format: "url",
       size: sizeValue,
       stream: false,
       watermark: options.watermark !== false, // 默认带水印
+    };
+
+    // ============ 图生图模式 ============
+    if (options.reference_images && options.reference_images.length > 0) {
+      // 校验参考图数量
+      if (options.reference_images.length > 2) {
+        throw validationError("参考图片最多2张");
+      }
+
+      return {
+        ...baseBody,
+        image: options.reference_images,
+        prompt: options.image_prompt || options.prompt,
+      };
+    }
+
+    // ============ 文生图模式 ============
+    return {
+      ...baseBody,
+      prompt: options.prompt,
     };
   }
 

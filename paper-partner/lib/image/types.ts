@@ -21,7 +21,18 @@ export interface GenerateImageRequest {
   size?: ImageSize;
   /** 是否带水印，默认 true */
   watermark?: boolean;
+
+  // ============ 图生图参数 ============
+  /** 参考图片 URL 数组（最多2张，用于图生图） */
+  reference_images?: string[];
+  /** 图生图指令（如"保持人物，换成傍晚场景"） */
+  image_prompt?: string;
 }
+
+/**
+ * 生成模式
+ */
+export type ImageGenerationMode = "text_to_image" | "image_to_image";
 
 /**
  * 图片尺寸选项
@@ -131,6 +142,14 @@ export interface ProviderOptions {
   watermark?: boolean;
   /** 请求标识 */
   requestId?: string;
+
+  // ============ 图生图参数 ============
+  /** 参考图片 URL 数组（最多2张） */
+  reference_images?: string[];
+  /** 图生图指令文本 */
+  image_prompt?: string;
+  /** 生成模式 */
+  mode?: ImageGenerationMode;
 }
 
 /**
