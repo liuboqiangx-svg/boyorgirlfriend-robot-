@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { DEFAULT_CHARACTER } from "@/lib/character";
-import { Memory } from "@/types";
+import { Memory, ReasoningResult, OpenRouterResponse, ApiErrorCode } from "@/types";
 import {
   EmotionEngine,
   createEmotionEngine,
@@ -10,6 +10,8 @@ import {
   detectTriggerWords,
 } from "@/lib/emotion";
 import { getEmotionConfig, getDefaultEmotionConfig } from "@/lib/emotions";
+import { LlmApiError, createErrorFromResponse, withRetry } from "@/lib/api/errors";
+import { createLogger, maskApiKey } from "@/lib/api/logger";
 
 const USE_MOCK = process.env.USE_MOCK_LLM === "true" || !process.env.OPENAI_API_KEY;
 const openai = new OpenAI({
@@ -29,6 +31,8 @@ export interface ChatOptions {
   intimacy: number;
   nickname?: string;
   emotionState?: Partial<EmotionState>;
+  enableReasoning?: boolean;   // 是否启用推理能力（默认 false）
+  showReasoning?: boolean;    // 是否展示思考过程（默认 false）
 }
 
 export interface GenerateReplyResult {
@@ -40,6 +44,7 @@ export interface GenerateReplyResult {
   triggerType: "positive" | "negative" | "neutral" | null;
   triggerWord: string | null;
   intensity: number;
+  reasoning?: ReasoningResult;  // 思考过程（可选）
 }
 
 // 角色情绪引擎缓存
@@ -67,6 +72,8 @@ export async function generateCharacterReply(
   options: ChatOptions
 ): Promise<GenerateReplyResult> {
   const engine = getEmotionEngine(options.characterId);
+  const logger = createLogger('openrouter');
+  const maskedKey = maskApiKey(process.env.OPENAI_API_KEY);
 
   // 如果有初始状态，设置它
   if (options.emotionState) {
@@ -93,8 +100,11 @@ export async function generateCharacterReply(
     currentEmotion.history.slice(-3)
   );
 
+  // Mock 模式
   if (USE_MOCK) {
+    logger.logRequestStart('chat.completions', options.characterId);
     const result = mockGenerateReply(options, engine);
+    logger.logRequestEnd('chat.completions', 200, 0, maskedKey);
     return {
       ...result,
       moodLabel: config.moodLabels[result.mood as MoodType] || result.mood,
@@ -134,15 +144,93 @@ ${moodStylePrompt}
     { role: "user", content: options.currentMessage },
   ];
 
+  const model = process.env.LLM_MODEL || "google/gemma-4-31b-it:free";
+  logger.logRequestStart('chat.completions', model);
+
+  const startTime = Date.now();
+
   try {
-    const completion = await openai.chat.completions.create({
-      model: process.env.LLM_MODEL || "gpt-4o-mini",
+    // 构建请求参数
+    const requestParams: OpenAI.Chat.ChatCompletionCreateParams = {
+      model,
       messages,
       temperature: 0.85,
       max_tokens: 200,
-    });
+    };
 
-    const content = completion.choices[0]?.message?.content?.trim() || "嗯，我在听。";
+    // 如果启用了 reasoning 且模型支持，添加 reasoning 参数
+    // OpenRouter 特定参数，通过 extra_body 传递
+    if (options.enableReasoning) {
+      logger.logReasoningStart(model);
+    }
+
+    // OpenRouter reasoning 参数需要通过 extra_headers 或 extra_body 传递
+    // 这里使用类型断言处理特定字段
+    const completionOptions: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming = {
+      model,
+      messages,
+      temperature: 0.85,
+      max_tokens: 200,
+      stream: false,
+      ...(options.enableReasoning ? {
+        extra_body: {
+          reasoning: {
+            effort: "medium",
+            exclude: false,
+          },
+        },
+      } : {}),
+    };
+
+    const completion = await withRetry(
+      () => openai.chat.completions.create(completionOptions),
+      'openrouter',
+      3
+    ) as OpenAI.Chat.ChatCompletion;
+
+    const duration = Date.now() - startTime;
+
+    // 提取响应内容
+    const choice = completion.choices[0];
+    const content = choice?.message?.content?.trim() || "嗯，我在听。";
+
+    // 构建 reasoning 结果（如果启用且模型返回了）
+    let reasoning: ReasoningResult | undefined;
+    if (options.enableReasoning && choice?.message) {
+      // OpenRouter 可能通过扩展字段返回 reasoning
+      // 这里做兼容处理
+      const rawMessage = choice.message as unknown as {
+        reasoning?: string;
+        [key: string]: unknown;
+      };
+      const reasoningText = rawMessage.reasoning;
+      if (reasoningText) {
+        reasoning = {
+          reasoning: reasoningText,
+          reasoningDetails: [
+            {
+              type: 'reasoning.text',
+              text: reasoningText,
+              format: 'unknown',
+              index: 0,
+            },
+          ],
+        };
+        // 记录推理结束
+        logger.logReasoningEnd(0, duration); // reasoningTokens 需从 usage 中获取
+      }
+    }
+
+    logger.logRequestEnd(
+      'chat.completions',
+      200,
+      duration,
+      maskedKey,
+      {
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens,
+      }
+    );
 
     return {
       content,
@@ -153,9 +241,42 @@ ${moodStylePrompt}
       triggerType: emotionResult.triggerType,
       triggerWord: emotionResult.trigger,
       intensity: currentEmotion.intensity,
+      reasoning,
     };
   } catch (error) {
-    console.error("LLM error:", error);
+    const duration = Date.now() - startTime;
+
+    // 统一错误处理
+    let llmError: LlmApiError;
+
+    if (error instanceof LlmApiError) {
+      llmError = error;
+    } else if (error instanceof Error) {
+      if ('status' in error && typeof (error as { status?: number }).status === 'number') {
+        // 这是一个带状态的错误（如 OpenAI SDK 错误）
+        const status = (error as { status?: number }).status;
+        llmError = new LlmApiError(
+          status === 401 ? ApiErrorCode.UNAUTHORIZED :
+          status === 403 ? ApiErrorCode.FORBIDDEN :
+          status === 429 ? ApiErrorCode.RATE_LIMIT :
+          status && status >= 500 ? ApiErrorCode.SERVER_ERROR : ApiErrorCode.UNKNOWN_ERROR,
+          'openrouter',
+          error.message,
+          status
+        );
+      } else {
+        llmError = new LlmApiError(ApiErrorCode.NETWORK_ERROR, 'openrouter', error.message);
+      }
+    } else {
+      llmError = new LlmApiError(ApiErrorCode.UNKNOWN_ERROR, 'openrouter', String(error));
+    }
+
+    // 记录错误日志
+    logger.logError('chat.completions', llmError, maskedKey);
+
+    console.error(`[LLM Error] ${llmError.code}: ${llmError.message}`);
+
+    // 出错时降级到 Mock 回复
     const mockResult = mockGenerateReply(options, engine);
     return {
       ...mockResult,
@@ -537,6 +658,9 @@ export async function extractMemoryFromConversation(
     return mockExtractMemory(userMessage, characterReply);
   }
 
+  const logger = createLogger('openrouter');
+  const maskedKey = maskApiKey(process.env.OPENAI_API_KEY);
+
   const prompt = `从以下对话中提取关于用户的关键事实。只输出 JSON 数组，格式：
 [{"category": "user_fact" | "preference" | "habit", "key": "简短键名", "value": "具体值"}]
 
@@ -545,19 +669,37 @@ export async function extractMemoryFromConversation(
 
 如果没有新事实，输出空数组 []。`;
 
+  const model = process.env.LLM_MODEL || "google/gemma-4-31b-it:free";
+  logger.logRequestStart('memory_extraction', model);
+
+  const startTime = Date.now();
+
   try {
-    const completion = await openai.chat.completions.create({
-      model: process.env.LLM_MODEL || "gpt-4o-mini",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-      max_tokens: 300,
+    const completion = await withRetry(
+      () => openai.chat.completions.create({
+        model,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 300,
+      }),
+      'openrouter',
+      2
+    );
+
+    const duration = Date.now() - startTime;
+    logger.logRequestEnd('memory_extraction', 200, duration, maskedKey, {
+      promptTokens: completion.usage?.prompt_tokens,
+      completionTokens: completion.usage?.completion_tokens,
     });
 
     const text = completion.choices[0]?.message?.content?.trim() || "[]";
     const clean = text.replace(/```json|```/g, "").trim();
     return JSON.parse(clean);
   } catch (error) {
-    console.error("Memory extraction error:", error);
+    const duration = Date.now() - startTime;
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.logError('memory_extraction', err, maskedKey);
+    console.error("[Memory Extraction Error]", err.message);
     return mockExtractMemory(userMessage, characterReply);
   }
 }

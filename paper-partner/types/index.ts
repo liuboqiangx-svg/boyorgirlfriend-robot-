@@ -120,3 +120,126 @@ export interface User {
   name: string;
   created_at: string;
 }
+
+// ==================== API 相关类型 ====================
+
+/**
+ * API 错误码枚举
+ */
+export enum ApiErrorCode {
+  UNAUTHORIZED = 'UNAUTHORIZED',        // 401 - 凭证无效
+  FORBIDDEN = 'FORBIDDEN',              // 403 - 无权限
+  RATE_LIMIT = 'RATE_LIMIT',            // 429 - 限流
+  SERVER_ERROR = 'SERVER_ERROR',        // 5xx - 服务端错误
+  TIMEOUT = 'TIMEOUT',                  // 请求超时
+  NETWORK_ERROR = 'NETWORK_ERROR',      // 网络断开
+  PARSE_ERROR = 'PARSE_ERROR',          // 响应解析失败
+  VALIDATION_ERROR = 'VALIDATION_ERROR',// 参数校验失败
+  UNKNOWN_ERROR = 'UNKNOWN_ERROR',      // 未知错误
+}
+
+/**
+ * API 错误接口
+ */
+export interface ApiError {
+  code: ApiErrorCode;
+  message: string;
+  provider: string;
+  httpStatus?: number;
+  retryable: boolean;
+  timestamp: number;
+  details?: string;
+}
+
+/**
+ * 日志级别
+ */
+export type LogLevel = 'info' | 'warn' | 'error';
+
+/**
+ * 日志事件类型
+ */
+export type LogEvent = 'api_request_start' | 'api_request_end' | 'api_error' | 'reasoning_start' | 'reasoning_end';
+
+/**
+ * 日志条目
+ */
+export interface LogEntry {
+  level: LogLevel;
+  event: LogEvent;
+  provider: string;
+  method: string;
+  requestId: string;
+  duration?: number;        // 毫秒
+  statusCode?: number;
+  errorCode?: string;
+  errorMessage?: string;
+  maskedKey?: string;      // 脱敏后的凭证前缀
+  timestamp: string;
+  reasoningTokens?: number; // 推理消耗 token 数
+  promptTokens?: number;    // 输入 token 数
+  completionTokens?: number;// 输出 token 数
+}
+
+/**
+ * 推理结果（reasoning 能力）
+ */
+export interface ReasoningResult {
+  reasoning: string;           // 思考过程
+  reasoningDetails?: {         // 详细思考信息
+    type: 'reasoning.text';
+    text: string;
+    format: string;
+    index: number;
+  }[];
+  rawResponse?: unknown;        // 原始响应（可选，用于调试）
+}
+
+/**
+ * OpenRouter 响应结构
+ */
+export interface OpenRouterResponse {
+  id: string;
+  object: string;
+  created: number;
+  model: string;
+  provider: string;
+  system_fingerprint?: string;
+  service_tier?: string | null;
+  choices: {
+    index: number;
+    logprobs: unknown | null;
+    finish_reason: string;
+    native_finish_reason: string;
+    message: {
+      role: string;
+      content: string;
+      refusal: string | null;
+      reasoning: string;
+      reasoning_details: ReasoningResult['reasoningDetails'];
+    };
+  }[];
+  usage: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+    cost: number;
+    is_byok: boolean;
+    prompt_tokens_details: {
+      cached_tokens: number;
+      cache_write_tokens: number;
+      audio_tokens: number;
+      video_tokens: number;
+    };
+    cost_details: {
+      upstream_inference_cost: number;
+      upstream_inference_prompt_cost: number;
+      upstream_inference_completions_cost: number;
+    };
+    completion_tokens_details: {
+      reasoning_tokens: number;
+      image_tokens: number;
+      audio_tokens: number;
+    };
+  };
+}
