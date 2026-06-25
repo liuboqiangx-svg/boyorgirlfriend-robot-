@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 配置安全规范 - 交互模拟</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f0f;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #00d4aa;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .conversation {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .conversation {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+
+        .panel-title {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-title::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00d4aa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-user {
+            background: #2a2a2a;
+            border-radius: 12px 12px 12px 4px;
+            padding: 15px;
+            border: 1px solid #333;
+        }
+
+        .message-ai {
+            background: #1a2a2a;
+            border-radius: 12px 12px 4px 12px;
+            padding: 15px;
+            border: 1px solid #00d4aa33;
+        }
+
+        .message-label {
+            font-size: 11px;
+            color: #00d4aa;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .message-content {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message-content code {
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #00d4aa;
+        }
+
+        .message-content pre {
+            background: #0a0a0a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+
+        .security-highlight {
+            background: #1a1a2a;
+            border-left: 3px solid #ff6b6b;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .security-highlight .label {
+            color: #ff6b6b;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .input-box {
+            background: #252525;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+            border: 1px solid #333;
+        }
+
+        .input-box textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #e0e0e0;
+            font-size: 13px;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .input-box .hint {
+            font-size: 11px;
+            color: #666;
+            margin-top: 8px;
+        }
+
+        .btn {
+            background: #00d4aa;
+            color: #0f0f0f;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover {
+            background: #00e8bb;
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .checklist {
+            background: #0a0a0a;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 13px;
+        }
+
+        .checklist-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .checklist-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .checklist-icon.pass {
+            background: #00d4aa33;
+            color: #00d4aa;
+        }
+
+        .checklist-icon.fail {
+            background: #ff6b6b33;
+            color: #ff6b6b;
+        }
+
+        .flow-diagram {
+            background: #0a0a0a;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .flow-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .flow-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #00d4aa;
+            color: #0f0f0f;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .flow-content {
+            flex: 1;
+        }
+
+        .flow-title {
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .flow-desc {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .arrow {
+            color: #00d4aa;
+            font-size: 18px;
+        }
+
+        .divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00d4aa33, transparent);
+            margin: 15px 0;
+        }
+
+        .tab-container {
+            margin-top: 20px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            background: #252525;
+            border: none;
+            border-radius: 6px 6px 0 0;
+            color: #888;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #1a1a1a;
+            color: #00d4aa;
+            border: 1px solid #333;
+            border-bottom: none;
+        }
+
+        .tab-content {
+            display: none;
+            background: #1a1a1a;
+            border-radius: 0 12px 12px 12px;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .file-tree {
+            font-size: 12px;
+            line-height: 1.8;
+        }
+
+        .file-tree .folder {
+            color: #00d4aa;
+        }
+
+        .file-tree .file {
+            color: #e0e0e0;
+            padding-left: 20px;
+        }
+
+        .file-tree .file::before {
+            content: '├── ';
+            color: #333;
+        }
+
+        .file-tree .file:last-child::before {
+            content: '└── ';
+        }
+
+        .highlight-danger {
+            background: #ff6b6b20;
+            color: #ff6b6b;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .highlight-safe {
+            background: #00d4aa20;
+            color: #00d4aa;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin: 15px 0;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .comparison-table th {
+            color: #888;
+            font-weight: 500;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #00d4aa33;
+            color: #00d4aa;
+        }
+
+        .badge-warning {
+            background: #ffaa0033;
+            color: #ffaa00;
+        }
+
+        .badge-danger {
+            background: #ff6b6b33;
+            color: #ff6b6b;
+        }
+
+        .mask-demo {
+            font-family: monospace;
+            background: #0a0a0a;
+            padding: 10px;
+            border-radius: 6px;
+            margin: 5px 0;
+            font-size: 12px;
+        }
+
+        .mask-demo .original {
+            color: #ff6b6b;
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+
+        .mask-demo .masked {
+            color: #00d4aa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 API 配置安全规范 - 交互模拟</h1>
+        <p class="subtitle">模拟完整的 API 配置流程，展示安全隔离机制</p>
+
+        <div class="conversation">
+            <!-- 左侧：对话 -->
+            <div class="panel">
+                <div class="panel-title">对话流程</div>
+
+                <!-- 步骤 0：MVP 阶段确认 -->
+                <div class="message message-ai">
+                    <div class="message-label">🤖 Claude</div>
+                    <div class="message-content">
+                        <p>收到 API 配置请求！在开始之前，请确认项目阶段：</p>
+                        <p><code>y</code> = MVP（快速配置，跳过完整架构）<br>
+                        <code>n</code> = 正式项目（完整架构流程）</p>
+                    </div>
+                </div>
+
+                <!-- 步骤 1：用户选择 MVP -->
+                <div class="message message-user">
+                    <div class="message-label">👤 用户</div>
+                    <div class="message-content">
+                        <p>y</p>
+                    </div>
+                </div>
+
+                <!-- 步骤 1.5：AI MVP 快速流程 -->
+                <div class="message message-ai">
+                    <div class="message-label">🤖 Claude</div>
+                    <div class="message-content">
+                        <p>✅ MVP 模式 - 快速配置！</p>
+                        <p>安全底线：凭证写入 .env，不进入代码</p>
+                        <p>正在根据 4 要素配置...</p>
+                    </div>
+                </div>
+
+                <!-- MVP 配置结果 -->
+                <div class="message message-ai">
+                    <div class="message-label">🤖 Claude</div>
+                    <div class="message-content">
+                        <p>✅ 配置完成！</p>
+                        <p><strong>文件</strong>: .env + src/app/api/volcano/route.ts</p>
+                        <p><strong>提示</strong>: 项目稳定后说「升级到正式模式」可补充完整架构</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：安全流程图 -->
+            <div class="panel">
+                <div class="panel-title">安全架构图</div>
+
+                <div class="flow-diagram">
+                    <div class="flow-step">
+                        <div class="flow-number">0</div>
+                        <div class="flow-content">
+                            <div class="flow-title">阶段确认</div>
+                            <div class="flow-desc">
+                                y = MVP（快速，~5分钟）<br>
+                                n = 正式（完整，~20分钟）
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">1</div>
+                        <div class="flow-content">
+                            <div class="flow-title">用户输入 4 要素</div>
+                            <div class="flow-desc">provider / curl / 输入示例 / 输出示例</div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">2</div>
+                        <div class="flow-content">
+                            <div class="flow-title">凭证写入 .env</div>
+                            <div class="flow-desc">
+                                <span class="highlight-safe">✅ 安全</span> - 仅服务端可读<br>
+                                <span class="highlight-danger">❌ 禁止</span> - 不写入代码
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">3</div>
+                        <div class="flow-content">
+                            <div class="flow-title">API Route</div>
+                            <div class="flow-desc">
+                                <span class="highlight-safe">✅ 仅接收</span> - prompt, model<br>
+                                <span class="highlight-danger">❌ 禁止</span> - 凭证参数
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="arrow">↓</div>
+
+                    <div class="flow-step">
+                        <div class="flow-number">4</div>
+                        <div class="flow-content">
+                            <div class="flow-title">前端组件</div>
+                            <div class="flow-desc">
+                                仅负责渲染和交互
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="security-highlight">
+                    <div class="label">🛡️ 隔离原则</div>
+                    <div style="font-size: 12px; line-height: 1.8; margin-top: 8px;">
+                        <div><strong>凭证层</strong> (.env) → 只能被服务端读取</div>
+                        <div><strong>适配层</strong> (providers/) → 封装凭证使用</div>
+                        <div><strong>服务层</strong> (services/) → 业务逻辑</div>
+                        <div><strong>接口层</strong> (api/) → 接收业务参数</div>
+                        <div><strong>展示层</strong> (components/) → 仅渲染</div>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="security-highlight" style="border-left-color: #00d4aa;">
+                    <div class="label" style="color: #00d4aa;">📋 错误处理映射</div>
+                    <table class="comparison-table" style="margin-top: 10px;">
+                        <tr>
+                            <th>HTTP</th>
+                            <th>错误码</th>
+                            <th>提示</th>
+                        </tr>
+                        <tr>
+                            <td>401</td>
+                            <td><span class="badge badge-danger">UNAUTHORIZED</span></td>
+                            <td>凭证无效</td>
+                        </tr>
+                        <tr>
+                            <td>403</td>
+                            <td><span class="badge badge-danger">FORBIDDEN</span></td>
+                            <td>无权限</td>
+                        </tr>
+                        <tr>
+                            <td>429</td>
+                            <td><span class="badge badge-warning">RATE_LIMIT</span></td>
+                            <td>请求过于频繁</td>
+                        </tr>
+                        <tr>
+                            <td>5xx</td>
+                            <td><span class="badge badge-danger">SERVER_ERROR</span></td>
+                            <td>服务商异常</td>
+                        </tr>
+                        <tr>
+                            <td>timeout</td>
+                            <td><span class="badge badge-warning">TIMEOUT</span></td>
+                            <td>请求超时</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(el => {
+                el.classList.remove('active');
+            });
+
+            // Show selected tab
+            document.getElementById('tab-' + tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
