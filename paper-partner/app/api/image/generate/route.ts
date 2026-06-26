@@ -194,7 +194,7 @@ function createErrorResponse(
     error: {
       code: error.code,
       message: error.message,
-      type: error.type as GenerateImageResponse["error"]["type"],
+      type: error.type as "auth" | "rate_limit" | "server" | "timeout" | "validation" | "unknown",
     },
   };
 

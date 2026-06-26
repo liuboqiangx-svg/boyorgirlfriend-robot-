@@ -3,7 +3,8 @@
  * 用于开发测试，不调用真实 API
  */
 
-import { VoiceProvider, ProviderOptions } from "../types";
+import { ProviderOptions } from "../types";
+import type { VoiceProvider } from "../provider";
 
 /**
  * Mock 音频数据（最小的有效 MP3 文件头）
@@ -33,6 +34,17 @@ export class MockVoiceProvider implements VoiceProvider {
     console.log(`[Mock TTS] Format: ${options.format || "mp3"}`);
 
     return MOCK_MP3_BASE64;
+  }
+
+  /**
+   * 获取配置（Mock 实现）
+   */
+  getConfig() {
+    return {
+      apiKey: "mock-api-key",
+      endpoint: "mock-endpoint",
+      resourceId: "mock-resource-id",
+    };
   }
 
   /**

@@ -1,4 +1,4 @@
-import { getMemories, upsertMemory } from "@/lib/db";
+import { getMemories, upsertMemory } from "@/lib/db/index-drizzle";
 import { extractMemoryFromConversation } from "@/lib/llm";
 import { Memory } from "@/types";
 

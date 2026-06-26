@@ -7,7 +7,7 @@ import {
   saveCharacter,
   getCharacterState,
   updateCharacterState,
-} from "@/lib/db";
+} from "@/lib/db/index-drizzle";
 import { DEFAULT_CHARACTER } from "@/lib/character";
 import { generateCharacterReply, isMockMode } from "@/lib/llm";
 import { getMemoryPromptText } from "@/lib/memory";

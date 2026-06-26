@@ -4,7 +4,7 @@ import {
   getMessages,
   insertMessage,
   updateCharacterState,
-} from "@/lib/db";
+} from "@/lib/db/index-drizzle";
 import { generateCharacterReply } from "@/lib/llm";
 import { getMemoryPromptText } from "@/lib/memory";
 import { CharacterProfile, CharacterState } from "@/types";

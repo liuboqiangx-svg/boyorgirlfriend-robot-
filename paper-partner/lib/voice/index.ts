@@ -50,11 +50,11 @@ export {
 
 // Provider 导出
 export {
-  VoiceProvider,
   registerVoiceProvider,
   getVoiceProvider,
   getRegisteredVoiceProviders,
 } from "./provider";
+export type { VoiceProvider } from "./provider";
 
 // 火山引擎 Provider
 export {

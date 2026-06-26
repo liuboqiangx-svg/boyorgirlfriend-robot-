@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCharacterState, updateCharacterState } from "@/lib/db";
+import { getCharacterState, updateCharacterState } from "@/lib/db/index-drizzle";
 import { maybeSendProactiveMessage } from "@/lib/proactive";
 import { DEFAULT_CHARACTER } from "@/lib/character";
 

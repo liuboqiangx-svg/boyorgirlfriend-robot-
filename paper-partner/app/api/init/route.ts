@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { initDatabaseAsync, saveCharacter } from "@/lib/db";
+import { initDatabaseAsync, saveCharacter } from "@/lib/db/index-drizzle";
 import { DEFAULT_CHARACTER } from "@/lib/character";
 
 let initialized = false;
