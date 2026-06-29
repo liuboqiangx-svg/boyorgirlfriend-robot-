@@ -62,6 +62,12 @@ export {
   createVolcanoVoiceProvider,
 } from "./providers/volcano";
 
+// Edge TTS Provider
+export {
+  EdgeVoiceProvider,
+  createEdgeVoiceProvider,
+} from "./providers/edge";
+
 // Mock Provider
 export {
   MockVoiceProvider,

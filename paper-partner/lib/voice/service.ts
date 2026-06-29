@@ -15,6 +15,7 @@ import {
 import { VoiceProvider } from "./provider";
 import { VolcanoVoiceProvider } from "./providers/volcano";
 import { MockVoiceProvider } from "./providers/mock";
+import { EdgeVoiceProvider } from "./providers/edge";
 import { VoiceGenerationError, getErrorDisplayMessage } from "./errors";
 import { createVoiceLogger, PerformanceTimer } from "./logger";
 import * as fs from "fs";
@@ -25,7 +26,7 @@ import * as path from "path";
  */
 export interface VoiceServiceConfig {
   /** 默认 Provider */
-  defaultProvider: "volcano-tts" | "mock-tts";
+  defaultProvider: "volcano-tts" | "mock-tts" | "edge-tts";
   /** Provider 配置 */
   providerConfig: {
     "volcano-tts"?: {
@@ -35,6 +36,11 @@ export interface VoiceServiceConfig {
       timeout?: number;
     };
     "mock-tts"?: Record<string, never>;
+    "edge-tts"?: {
+      apiKey?: string;
+      endpoint?: string;
+      timeout?: number;
+    };
   };
 }
 
@@ -52,8 +58,17 @@ export class VoiceService {
       // Mock 模式
       this.provider = new MockVoiceProvider();
       this.logger.info("Using Mock TTS Provider");
+    } else if (config.defaultProvider === "edge-tts") {
+      // Edge TTS 模式
+      this.provider = new EdgeVoiceProvider({
+        apiKey: config.providerConfig["edge-tts"]?.apiKey || process.env.EDGE_TTS_API_KEY || "paper_partner",
+        endpoint: config.providerConfig["edge-tts"]?.endpoint || process.env.EDGE_TTS_ENDPOINT || "http://localhost:5050/v1/audio/speech",
+        resourceId: "edge-tts",
+        timeout: config.providerConfig["edge-tts"]?.timeout || 30000,
+      });
+      this.logger.info("Using Edge TTS Provider");
     } else {
-      // 真实 API 模式
+      // 真实 API 模式（火山引擎）
       this.provider = new VolcanoVoiceProvider({
         apiKey: config.providerConfig["volcano-tts"]?.apiKey || process.env.VOLCANO_TTS_API_KEY || "",
         endpoint: config.providerConfig["volcano-tts"]?.endpoint || "https://openspeech.bytedance.com/api/v3/tts/unidirectional",
@@ -252,13 +267,29 @@ let defaultService: VoiceService | null = null;
  * 是否使用 Mock TTS 模式
  */
 function isMockTTSEnabled(): boolean {
-  // 通过环境变量控制，或当 API key 为空时自动启用
+  // 优先检查 USE_MOCK_TTS 环境变量
   const useMock = process.env.USE_MOCK_TTS;
   if (useMock !== undefined) {
-    return useMock !== "false";
+    return useMock === "true";
   }
-  // 如果没有配置 TTS API key，使用 Mock 模式
+  // 如果没有配置任何 TTS API key，使用 Mock 模式
   return !process.env.VOLCANO_TTS_API_KEY;
+}
+
+/**
+ * 获取使用的 TTS Provider 类型
+ */
+function getActiveProvider(): "volcano-tts" | "mock-tts" | "edge-tts" {
+  // 明确指定的 Provider
+  const provider = process.env.TTS_PROVIDER;
+  if (provider === "volcano-tts") return "volcano-tts";
+  if (provider === "mock-tts") return "mock-tts";
+  if (provider === "edge-tts") return "edge-tts";
+
+  // 自动检测
+  if (isMockTTSEnabled()) return "mock-tts";
+  if (process.env.EDGE_TTS_ENDPOINT) return "edge-tts";
+  return "volcano-tts";
 }
 
 /**
@@ -266,12 +297,13 @@ function isMockTTSEnabled(): boolean {
  */
 export function getVoiceService(): VoiceService {
   if (!defaultService) {
-    const useMock = isMockTTSEnabled();
+    const activeProvider = getActiveProvider();
     defaultService = new VoiceService({
-      defaultProvider: useMock ? "mock-tts" : "volcano-tts",
+      defaultProvider: activeProvider,
       providerConfig: {
         "volcano-tts": {},
         "mock-tts": {},
+        "edge-tts": {},
       },
     });
   }

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Send, Sparkles, Loader2, Mic, Image, Heart, Zap } from "lucide-react";
+import { Send, Sparkles, Loader2, Mic, Image, Heart, Zap, Volume2 } from "lucide-react";
 import type { Message, CharacterProfile, CharacterState, MoodType } from "@/types";
 import { MOOD_LABELS, MOOD_EMOJIS } from "@/types";
 
@@ -34,6 +34,9 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   const [moodChanged, setMoodChanged] = useState(false);
   const [lastMood, setLastMood] = useState<string>("");
   const [generatingImage, setGeneratingImage] = useState(false);
+  const [playingMessageId, setPlayingMessageId] = useState<string | null>(null);
+  const [generatingVoice, setGeneratingVoice] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const deviceIdRef = useRef<string>("");
@@ -224,6 +227,69 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
     return MOOD_EMOJIS[mood] || "😐";
   };
 
+  // 生成并播放语音
+  const playVoice = async (msg: MessageWithImage) => {
+    // 如果正在播放或正在生成，直接返回
+    if (playingMessageId === msg.id || generatingVoice === msg.id) return;
+    if (generatingVoice) return;
+
+    setPlayingMessageId(msg.id);
+    setGeneratingVoice(msg.id);
+
+    try {
+      // 调用 TTS API 生成语音
+      const res = await fetch("/api/tts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: msg.content }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.data?.url) {
+        // 停止之前的音频
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current = null;
+        }
+
+        // 播放新音频
+        const audio = new Audio(data.data.url);
+        audioRef.current = audio;
+
+        audio.onplay = () => {
+          setPlayingMessageId(msg.id);
+        };
+
+        audio.onended = () => {
+          setPlayingMessageId(null);
+        };
+
+        audio.onerror = () => {
+          console.error("音频播放失败");
+          setPlayingMessageId(null);
+        };
+
+        await audio.play();
+      } else {
+        console.error("语音生成失败:", data.error);
+      }
+    } catch (error) {
+      console.error("播放语音错误:", error);
+    } finally {
+      setGeneratingVoice(null);
+    }
+  };
+
+  // 停止播放
+  const stopVoice = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setPlayingMessageId(null);
+  };
+
   // 测试图像生成
   const testImageGeneration = async () => {
     if (generatingImage) return;
@@ -385,6 +451,36 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                   </div>
                 )}
                 <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                {/* 语音播放按钮（仅角色消息显示） */}
+                {msg.role === "character" && (
+                  <button
+                    onClick={() => playingMessageId === msg.id ? stopVoice() : playVoice(msg)}
+                    disabled={generatingVoice !== null && generatingVoice !== msg.id}
+                    className={`mt-2 flex items-center gap-1 text-xs px-2 py-1 rounded-full transition-all ${
+                      playingMessageId === msg.id
+                        ? "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400"
+                        : "bg-gray-100 text-gray-500 hover:bg-pink-50 hover:text-pink-500 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-pink-900/30 dark:hover:text-pink-400"
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                    title="播放语音"
+                  >
+                    {generatingVoice === msg.id ? (
+                      <>
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>生成中...</span>
+                      </>
+                    ) : playingMessageId === msg.id ? (
+                      <>
+                        <Volume2 className="w-3 h-3" />
+                        <span>播放中</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3 h-3" />
+                        <span>听语音</span>
+                      </>
+                    )}
+                  </button>
+                )}
                 <p
                   className={`text-xs mt-1 opacity-70 ${
                     msg.role === "user" ? "text-pink-100" : "text-gray-400"
