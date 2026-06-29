@@ -6,7 +6,8 @@ import { zhCN } from "date-fns/locale";
 import { Send, Sparkles, Loader2, Mic, Image, Heart, Zap, Volume2, Play, Pause } from "lucide-react";
 import type { Message, CharacterProfile, CharacterState, MoodType } from "@/types";
 import { MOOD_LABELS, MOOD_EMOJIS } from "@/types";
-import { getCharacterVoiceConfig } from "@/lib/character";
+import { getCharacterVoiceConfig, DEFAULT_CHARACTER } from "@/lib/character";
+import { CharacterSwitcher } from "./CharacterSwitcher";
 
 interface MessageWithImage {
   id: string;
@@ -56,26 +57,50 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const deviceIdRef = useRef<string>("");
+  const initRef = useRef(false);
 
-  // 初始化设备ID
-  useEffect(() => {
+  // 初始化聊天（加载角色 + 初始化 + 加载消息）
+  const initChat = useCallback(async (characterId?: string) => {
+    if (initRef.current) return;
+    initRef.current = true;
+
+    // 1. 获取设备ID
     let id = localStorage.getItem("deviceId");
     if (!id) {
       id = "user-" + Math.random().toString(36).slice(2, 11);
       localStorage.setItem("deviceId", id);
     }
     deviceIdRef.current = id;
-  }, []);
 
-  // 加载历史消息
-  const loadMessages = useCallback(async () => {
+    // 2. 获取角色ID（优先用参数 > localStorage > 默认）
+    const savedCharacterId = localStorage.getItem("selectedCharacterId");
+    const targetCharacterId = characterId || savedCharacterId || "lu-chen-001";
+
+    // 3. 加载角色配置
+    const { getCharacterById } = await import("@/lib/character");
+    const characterConfig = getCharacterById(targetCharacterId);
+    if (characterConfig) {
+      setCharacter(characterConfig);
+    }
+
+    // 4. 初始化角色
     try {
-      const res = await fetch(`/api/chat?characterId=${character?.id}`, {
+      await fetch("/api/init", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ characterId: targetCharacterId }),
+      });
+    } catch (error) {
+      console.error("初始化失败:", error);
+    }
+
+    // 5. 加载消息
+    try {
+      const res = await fetch(`/api/chat?characterId=${targetCharacterId}`, {
         headers: { "x-device-id": deviceIdRef.current },
       });
       const data = await res.json();
       if (data.messages) setMessages(data.messages);
-      if (data.character) setCharacter(data.character);
       if (data.state) {
         setState(data.state);
         setLastMood(data.state.mood);
@@ -85,20 +110,12 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
     } catch (error) {
       console.error("加载消息失败:", error);
     }
-  }, [character?.id, onStateChange]);
+  }, [onStateChange]);
 
   // 初始化
   useEffect(() => {
-    const init = async () => {
-      try {
-        await fetch("/api/init", { method: "POST" });
-        await loadMessages();
-      } catch (error) {
-        console.error("初始化失败:", error);
-      }
-    };
-    init();
-  }, [loadMessages]);
+    initChat();
+  }, [initChat]);
 
   // 滚动到底部
   useEffect(() => {
@@ -437,31 +454,46 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
       {/* 顶部导航 */}
       <header className="sticky top-0 z-10 twilight-header-glass px-4 py-3">
         <div className="flex items-center gap-3 max-w-3xl mx-auto">
-          <div className="relative">
-            <img
-              src={character?.avatar_url || "/avatar.png"}
-              alt={character?.display_name}
-              className="w-12 h-12 rounded-full object-cover bg-orange-100 twilight-avatar border-2 border-orange-200"
-            />
-            <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="font-semibold text-gray-900 truncate twilight-card-name">
-              {character?.display_name || "加载中..."}
-            </h1>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              {state && (
-                <span className="flex items-center gap-1">
-                  {getMoodEmoji(state.mood)} {getMoodLabel(state.mood)}
-                </span>
-              )}
-              {mockMode && (
-                <span className="twilight-demo-badge-light">
-                  <Sparkles className="w-3 h-3" /> 演示模式
-                </span>
-              )}
+          {/* 角色切换器 */}
+          <CharacterSwitcher
+            currentCharacter={character}
+            onSwitch={(newCharacter) => {
+              setCharacter(newCharacter);
+              // 清空当前聊天
+              setMessages([]);
+            }}
+          />
+
+          {/* 角色信息 */}
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="relative">
+              <img
+                src={character?.avatar_url || DEFAULT_CHARACTER.avatar_url}
+                alt={character?.display_name}
+                className="w-10 h-10 rounded-full object-cover bg-orange-100 border-2 border-orange-200"
+              />
+              <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h1 className="font-semibold text-gray-900 truncate twilight-card-name text-sm">
+                {character?.display_name || "加载中..."}
+              </h1>
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                {state && (
+                  <span className="flex items-center gap-1">
+                    {getMoodEmoji(state.mood)} {getMoodLabel(state.mood)}
+                  </span>
+                )}
+                {mockMode && (
+                  <span className="twilight-demo-badge-light">
+                    <Sparkles className="w-2 h-2" />
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+
+          {/* 亲密度 */}
           {state && (
             <div className="flex flex-col items-end gap-1">
               <div className="flex items-center gap-1 text-sm">
@@ -470,7 +502,6 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                   {state.intimacy}
                 </span>
               </div>
-              {/* 情绪强度指示 */}
               {state.mood_intensity && (
                 <div className="twilight-intimacy-track">
                   <div
@@ -537,14 +568,13 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                 {/* 语音播放按钮（仅角色消息显示） */}
                 {msg.role === "character" && (
                   <div className="mt-2">
-                    <button
+                    <div
                       onClick={() => playVoice(msg)}
-                      disabled={voiceStates[msg.id]?.isGenerating}
-                      className="twilight-voice-bubble py-2 px-3"
+                      className="twilight-voice-bubble py-2 px-3 cursor-pointer"
                       title={voiceStates[msg.id]?.isPlaying ? "暂停" : "播放语音"}
                     >
                       {/* 播放按钮 */}
-                      <button
+                      <div
                         onClick={(e) => {
                           e.stopPropagation();
                           if (voiceStates[msg.id]?.isPlaying) {
@@ -553,8 +583,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                             playVoice(msg);
                           }
                         }}
-                        className="twilight-play-btn w-8 h-8"
-                        disabled={voiceStates[msg.id]?.isGenerating}
+                        className="twilight-play-btn w-8 h-8 cursor-pointer"
                       >
                         {voiceStates[msg.id]?.isGenerating ? (
                           <Loader2 className="w-3 h-3 twilight-spin" />
@@ -563,7 +592,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                         ) : (
                           <Play className="w-3 h-3 ml-0.5" />
                         )}
-                      </button>
+                      </div>
 
                       {/* 波形动画（播放时显示） */}
                       {voiceStates[msg.id]?.isPlaying ? (
@@ -598,7 +627,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                           ? "播放中"
                           : "听语音"}
                       </span>
-                    </button>
+                    </div>
                   </div>
                 )}
                 <p
