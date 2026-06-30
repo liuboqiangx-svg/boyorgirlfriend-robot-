@@ -760,9 +760,9 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   const testImageGeneration = async () => {
     if (generatingImage) return;
 
-    // 可用的角色列表（暂时硬编码，后续可以从 API 获取）
-    const availableCharacters = ["xiao-xiao", "lin-ye", "shen-mo", "shu-ting", "gu-ran"];
-    const testCharacterId = availableCharacters[Math.floor(Math.random() * availableCharacters.length)];
+    // 使用当前选中的角色
+    const currentCharacterId = character?.id;
+    if (!currentCharacterId) return;
 
     setGeneratingImage(true);
     try {
@@ -770,7 +770,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          characterId: testCharacterId,
+          characterId: currentCharacterId,
           emotion: state?.mood || "happy",
           scene: "beach",
           size: "2K",
@@ -783,7 +783,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
         const imageMsg: MessageWithImage = {
           id: `img-${Date.now()}`,
           user_id: "character",
-          character_id: testCharacterId,
+          character_id: currentCharacterId,
           role: "character",
           content: "这是我的照片~",
           type: "image",
