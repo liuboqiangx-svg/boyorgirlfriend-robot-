@@ -69,6 +69,8 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   const [voiceStates, setVoiceStates] = useState<Record<string, VoiceState>>({});
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentVoiceIdRef = useRef<string | null>(null);
+  const autoPlayNextRef = useRef(true);
+  const messagesRef = useRef<MessageWithImage[]>(messages);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const deviceIdRef = useRef<string>("");
@@ -144,6 +146,11 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   // 滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // 同步 messagesRef
+  useEffect(() => {
+    messagesRef.current = messages;
   }, [messages]);
 
   // 图像触发关键词
@@ -231,7 +238,11 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   };
 
   // 生成并播放语音
-  const playVoice = async (msg: MessageWithImage) => {
+  const playVoice = async (msg: MessageWithImage, isAutoPlay = false) => {
+    // 用户手动播放时开启自动播放下一条
+    if (!isAutoPlay) {
+      autoPlayNextRef.current = true;
+    }
     // 如果已经在生成这个语音，直接返回
     if (voiceStates[msg.id]?.isGenerating) return;
 
@@ -310,6 +321,23 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
             [msg.id]: { ...prev[msg.id], isPlaying: false, progress: 0 }
           }));
           currentVoiceIdRef.current = null;
+
+          // 自动播放下一条角色语音
+          if (autoPlayNextRef.current) {
+            const currentIndex = messagesRef.current.findIndex((m) => m.id === msg.id);
+            const nextVoiceMsg = messagesRef.current
+              .slice(currentIndex + 1)
+              .find((m) => m.role === "character" && m.type === "text");
+
+            if (nextVoiceMsg) {
+              // 延迟 500ms 再播放下一条，更自然
+              setTimeout(() => {
+                if (autoPlayNextRef.current && !currentVoiceIdRef.current) {
+                  playVoice(nextVoiceMsg, true);
+                }
+              }, 500);
+            }
+          }
         });
 
         audio.addEventListener("error", () => {
@@ -373,6 +401,12 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
       }));
       currentVoiceIdRef.current = null;
     }
+  };
+
+  // 暂停播放（用户手动暂停时取消自动播放）
+  const pauseVoice = () => {
+    autoPlayNextRef.current = false;
+    stopVoice();
   };
 
   // 格式化时间 (秒 -> MM:SS)
@@ -574,7 +608,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
                       onClick={(e) => {
                         e.stopPropagation();
                         if (voiceStates[msg.id]?.isPlaying) {
-                          stopVoice();
+                          pauseVoice();
                         } else {
                           playVoice(msg);
                         }
