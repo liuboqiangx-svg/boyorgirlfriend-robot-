@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { formatDistanceToNow } from "date-fns";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { formatDistanceToNow, isToday, isYesterday, format, differenceInMinutes } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Send, Sparkles, Loader2, Mic, Image, Heart, Zap, Volume2, Play, Pause } from "lucide-react";
 import type { Message, CharacterProfile, CharacterState, MoodType } from "@/types";
@@ -390,6 +390,146 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
     }
   };
 
+  // 渲染消息分组
+  const renderMessageGroups = () => {
+    const groups: { date: string; dateLabel: string; messages: MessageWithImage[] }[] = [];
+    let currentGroup: { date: string; dateLabel: string; messages: MessageWithImage[] } | null = null;
+
+    messages.forEach((msg, index) => {
+      const msgDate = new Date(msg.created_at);
+      const dateKey = format(msgDate, "yyyy-MM-dd");
+      let dateLabel = format(msgDate, "M月d日 EEEE", { locale: zhCN });
+
+      if (isToday(msgDate)) {
+        dateLabel = "今天";
+      } else if (isYesterday(msgDate)) {
+        dateLabel = "昨天";
+      }
+
+      // 检查是否需要新的分组（日期改变 或 与上一条消息间隔超过5分钟）
+      const prevMsg = messages[index - 1];
+      const needNewGroup = !currentGroup || currentGroup.date !== dateKey ||
+        (prevMsg && differenceInMinutes(msgDate, new Date(prevMsg.created_at)) > 5);
+
+      if (needNewGroup) {
+        currentGroup = { date: dateKey, dateLabel, messages: [] };
+        groups.push(currentGroup);
+      }
+
+      currentGroup?.messages.push(msg);
+    });
+
+    return groups.map((group) => (
+      <div key={group.date}>
+        {/* 日期标签 */}
+        <div className="flex items-center justify-center my-4">
+          <span className="px-4 py-1 bg-white/60 backdrop-blur-sm rounded-full text-xs text-amber-600 shadow-sm">
+            {group.dateLabel}
+          </span>
+        </div>
+
+        {/* 消息列表 */}
+        {group.messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} twilight-animate-in`}
+          >
+            {msg.role === "character" && (
+              <img
+                src={character?.avatar_url || "/avatar.png"}
+                alt="角色"
+                className="w-9 h-9 rounded-full bg-orange-100 border-2 border-orange-200 flex-shrink-0 object-cover"
+              />
+            )}
+
+            <div
+              className={`max-w-[75%] px-4 py-3 ${
+                msg.role === "user"
+                  ? "twilight-bubble-user"
+                  : "twilight-bubble-bot"
+              }`}
+            >
+              {/* 图片消息 */}
+              {msg.type === "image" && msg.media_url && (
+                <div className="mb-2 twilight-image-bubble">
+                  <img
+                    src={msg.media_url}
+                    alt="生成的图片"
+                    className="rounded-lg max-w-full max-h-80 object-contain"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+              {/* 语音播放按钮（仅角色消息显示） */}
+              {msg.role === "character" && (
+                <div className="mt-2">
+                  <div
+                    onClick={() => playVoice(msg)}
+                    className="twilight-voice-bubble py-2 px-3 cursor-pointer"
+                    title={voiceStates[msg.id]?.isPlaying ? "暂停" : "播放语音"}
+                  >
+                    <div
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (voiceStates[msg.id]?.isPlaying) {
+                          stopVoice();
+                        } else {
+                          playVoice(msg);
+                        }
+                      }}
+                      className="twilight-play-btn w-8 h-8 cursor-pointer"
+                    >
+                      {voiceStates[msg.id]?.isGenerating ? (
+                        <Loader2 className="w-3 h-3 twilight-spin" />
+                      ) : voiceStates[msg.id]?.isPlaying ? (
+                        <Pause className="w-3 h-3" />
+                      ) : (
+                        <Play className="w-3 h-3 ml-0.5" />
+                      )}
+                    </div>
+                    {voiceStates[msg.id]?.isPlaying ? (
+                      <div className="flex items-center gap-0.5 flex-1">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div
+                            key={i}
+                            className="twilight-wave-bar"
+                            style={{ animationDelay: `${i * 0.1}s` }}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex-1 h-4 flex items-center">
+                        <div className="twilight-progress-bar flex-1">
+                          <div
+                            className="twilight-progress-fill"
+                            style={{ width: `${voiceStates[msg.id]?.progress || 0}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                    <span className="twilight-voice-time text-xs whitespace-nowrap">
+                      {voiceStates[msg.id]?.isGenerating ? "生成中..." : voiceStates[msg.id]?.isPlaying ? "播放中" : "听语音"}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <p className={`text-xs mt-1 ${msg.role === "user" ? "text-orange-100" : "text-amber-600"}`}>
+                {formatDistanceToNow(new Date(msg.created_at), { addSuffix: false, locale: zhCN })}
+              </p>
+            </div>
+
+            {msg.role === "user" && (
+              <div className="w-9 h-9 rounded-full bg-orange-100 border-2 border-orange-200 flex-shrink-0 flex items-center justify-center text-orange-600 font-medium">
+                我
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    ));
+  };
+
   // 测试图像生成
   const testImageGeneration = async () => {
     if (generatingImage) return;
@@ -528,128 +668,18 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
         <div className="max-w-3xl mx-auto space-y-4">
           {messages.length === 0 && (
             <div className="text-center py-12 text-amber-700">
+              <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-200 to-amber-100 flex items-center justify-center">
+                <span className="text-3xl">💭</span>
+              </div>
               <p className="text-lg mb-2">还没有消息</p>
               <p className="text-sm text-amber-600">开始和 {character?.display_name} 聊天吧~</p>
             </div>
           )}
 
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"} twilight-animate-in`}
-            >
-              {msg.role === "character" && (
-                <img
-                  src={character?.avatar_url || "/avatar.png"}
-                  alt="角色"
-                  className="w-9 h-9 rounded-full bg-orange-100 border-2 border-orange-200 flex-shrink-0 object-cover"
-                />
-              )}
+          {/* 消息分组渲染 */}
+          {renderMessageGroups()}
 
-              <div
-                className={`max-w-[75%] px-4 py-3 ${
-                  msg.role === "user"
-                    ? "twilight-bubble-user"
-                    : "twilight-bubble-bot"
-                }`}
-              >
-                {/* 图片消息 */}
-                {msg.type === "image" && msg.media_url && (
-                  <div className="mb-2 twilight-image-bubble">
-                    <img
-                      src={msg.media_url}
-                      alt="生成的图片"
-                      className="rounded-lg max-w-full max-h-80 object-contain"
-                      loading="lazy"
-                    />
-                  </div>
-                )}
-                <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
-                {/* 语音播放按钮（仅角色消息显示） */}
-                {msg.role === "character" && (
-                  <div className="mt-2">
-                    <div
-                      onClick={() => playVoice(msg)}
-                      className="twilight-voice-bubble py-2 px-3 cursor-pointer"
-                      title={voiceStates[msg.id]?.isPlaying ? "暂停" : "播放语音"}
-                    >
-                      {/* 播放按钮 */}
-                      <div
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (voiceStates[msg.id]?.isPlaying) {
-                            stopVoice();
-                          } else {
-                            playVoice(msg);
-                          }
-                        }}
-                        className="twilight-play-btn w-8 h-8 cursor-pointer"
-                      >
-                        {voiceStates[msg.id]?.isGenerating ? (
-                          <Loader2 className="w-3 h-3 twilight-spin" />
-                        ) : voiceStates[msg.id]?.isPlaying ? (
-                          <Pause className="w-3 h-3" />
-                        ) : (
-                          <Play className="w-3 h-3 ml-0.5" />
-                        )}
-                      </div>
-
-                      {/* 波形动画（播放时显示） */}
-                      {voiceStates[msg.id]?.isPlaying ? (
-                        <div className="flex items-center gap-0.5 flex-1">
-                          {[1, 2, 3, 4, 5].map((i) => (
-                            <div
-                              key={i}
-                              className="twilight-wave-bar"
-                              style={{
-                                animationDelay: `${i * 0.1}s`,
-                                height: `${6 + Math.random() * 8}px`,
-                              }}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="flex-1 h-4 flex items-center">
-                          <div className="twilight-progress-bar flex-1">
-                            <div
-                              className="twilight-progress-fill"
-                              style={{ width: `${voiceStates[msg.id]?.progress || 0}%` }}
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {/* 时长 */}
-                      <span className="twilight-voice-time text-xs whitespace-nowrap">
-                        {voiceStates[msg.id]?.isGenerating
-                          ? "生成中..."
-                          : voiceStates[msg.id]?.isPlaying
-                          ? "播放中"
-                          : "听语音"}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <p
-                  className={`text-xs mt-1 opacity-70 ${
-                    msg.role === "user" ? "text-orange-100" : "text-amber-600"
-                  }`}
-                >
-                  {formatDistanceToNow(new Date(msg.created_at), {
-                    addSuffix: false,
-                    locale: zhCN,
-                  })}
-                </p>
-              </div>
-
-              {msg.role === "user" && (
-                <div className="w-9 h-9 rounded-full bg-orange-100 border-2 border-orange-200 flex-shrink-0 flex items-center justify-center text-orange-600 font-medium">
-                  我
-                </div>
-              )}
-            </div>
-          ))}
-
+          {/* 加载状态 */}
           {loading && (
             <div className="flex gap-3 justify-start twilight-animate-in">
               <img
