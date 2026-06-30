@@ -12,8 +12,8 @@ import { getRegisteredCharacterIds, characterPromptRegistry } from "@/lib/image/
 import { GenerateCharacterImageRequest, GenerateImageResponse, ImageSize } from "@/lib/image";
 import { ERROR_CODES } from "@/lib/image/types";
 
-// 直接导入 xiao-xiao 强制注册（解决模块加载顺序问题）
-import "@/lib/image/prompts/characters/xiao-xiao";
+// 导入所有角色 Prompt 库（触发注册）
+import "@/lib/image/prompts";
 
 /**
  * 允许的尺寸选项
@@ -23,7 +23,7 @@ const ALLOWED_SIZES: ImageSize[] = ["2K", "4K"];
 /**
  * 允许的角色 ID
  */
-const ALLOWED_CHARACTERS = ["xiao-xiao", "lin-ye", "shen-mo", "shu-ting", "gu-ran"];
+const ALLOWED_CHARACTERS = ["lu-chen-001", "lin-ye", "shen-mo", "shu-ting", "gu-ran"];
 
 /**
  * POST /api/image/character

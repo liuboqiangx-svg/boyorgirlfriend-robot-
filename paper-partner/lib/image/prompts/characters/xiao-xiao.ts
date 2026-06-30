@@ -13,7 +13,7 @@ import {
  * 晓晓 Prompt 库
  */
 const xiaoXiaoLibrary: CharacterPromptLibrary = {
-  id: "xiao-xiao",
+  id: "lu-chen-001",
   name: "晓晓",
   description: "26岁建筑设计师，优雅知性，气质清冷，日常看书、喝茶、看展",
 
