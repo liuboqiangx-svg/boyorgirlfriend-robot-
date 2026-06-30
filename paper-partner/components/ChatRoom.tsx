@@ -723,6 +723,21 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
     if (!text.trim() || loading) return;
 
     setInput("");
+
+    // 1. 先立即添加用户消息（不等待 API）
+    const userMessage: MessageWithImage = {
+      id: `user-${Date.now()}`,
+      user_id: deviceIdRef.current,
+      character_id: character?.id || "",
+      role: "user",
+      content: text,
+      type: "text",
+      is_read: true,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+
+    // 2. 设置 loading 显示"正在输入..."动画
     setLoading(true);
 
     try {
@@ -739,8 +754,9 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
       });
 
       const data = await res.json();
-      if (data.userMessage && data.characterMessage) {
-        setMessages((prev) => [...prev, data.userMessage, data.characterMessage]);
+      if (data.characterMessage) {
+        // 3. API 返回后添加角色消息
+        setMessages((prev) => [...prev, data.characterMessage]);
 
         if (data.state && data.state.mood !== lastMood) {
           setMoodChanged(true);
@@ -765,7 +781,7 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
       }
     } catch (error) {
       console.error("发送失败:", error);
-      setInput(text);
+      // 用户消息已添加，可以选择删除或保留，这里保留让用户知道消息发出了
     } finally {
       setLoading(false);
       inputRef.current?.focus();
