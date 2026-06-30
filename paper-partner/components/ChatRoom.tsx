@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { flushSync } from "react-dom";
 import { formatDistanceToNow, isToday, isYesterday, format, differenceInMinutes } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { Send, Sparkles, Loader2, Mic, Image, Heart, Zap, Volume2, Play, Pause, X, ZoomIn, ZoomOut, RotateCcw, Copy, Trash2, ChevronDown } from "lucide-react";
@@ -670,9 +671,10 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
   const sendMessageWithText = async (text: string) => {
     if (!text.trim() || loading) return;
 
+    // 0. 先清空输入框（立即响应）
     setInput("");
 
-    // 1. 先立即添加用户消息（不等待 API）
+    // 1. 先立即添加用户消息（使用 flushSync 确保立即更新）
     const userMessage: MessageWithImage = {
       id: `user-${Date.now()}`,
       user_id: deviceIdRef.current,
@@ -683,10 +685,19 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
       is_read: true,
       created_at: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, userMessage]);
+
+    // 使用 flushSync 确保用户消息立即显示
+    flushSync(() => {
+      setMessages(prev => [...prev, userMessage]);
+    });
+
+    // 立即滚动到底部
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
 
     // 2. 设置 loading 显示"正在输入..."动画
-    setLoading(true);
+    flushSync(() => {
+      setLoading(true);
+    });
 
     try {
       const res = await fetch("/api/chat", {
