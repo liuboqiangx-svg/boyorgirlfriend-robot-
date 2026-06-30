@@ -8,9 +8,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getImageService } from "@/lib/image/service";
 import { PromptAssembler } from "@/lib/image/assembler";
-import { getRegisteredCharacterIds } from "@/lib/image/prompts/registry";
+import { getRegisteredCharacterIds, characterPromptRegistry } from "@/lib/image/prompts/registry";
 import { GenerateCharacterImageRequest, GenerateImageResponse, ImageSize } from "@/lib/image";
 import { ERROR_CODES } from "@/lib/image/types";
+
+// 直接导入 xiao-xiao 强制注册（解决模块加载顺序问题）
+import "@/lib/image/prompts/characters/xiao-xiao";
 
 /**
  * 允许的尺寸选项
