@@ -894,18 +894,30 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
           {/* 消息分组渲染 */}
           {renderMessageGroups()}
 
-          {/* 加载状态 */}
+          {/* 加载状态 / 打字特效 */}
           {loading && (
             <div className="flex gap-3 justify-start twilight-animate-in">
-              <img
-                src={character?.avatar_url || "/avatar.png"}
-                alt="角色"
-                className="w-9 h-9 rounded-full bg-orange-100 border-2 border-orange-200 flex-shrink-0 object-cover"
-              />
+              <div className="relative flex-shrink-0">
+                <img
+                  src={character?.avatar_url || "/avatar.png"}
+                  alt="角色"
+                  className="w-9 h-9 rounded-full bg-orange-100 border-2 border-orange-200 object-cover twilight-typing-avatar"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+              </div>
               <div className="twilight-bubble-bot px-4 py-3">
-                <div className="flex items-center gap-2 text-amber-600">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>打字中...</span>
+                <div className="flex items-center gap-3 text-amber-600">
+                  {/* 三个跳动的点 */}
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="w-2 h-2 bg-amber-500 rounded-full twilight-typing-dot"
+                        style={{ animationDelay: `${i * 0.15}s` }}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-sm">{character?.display_name || "TA"} 正在输入...</span>
                 </div>
               </div>
             </div>

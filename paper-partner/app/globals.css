@@ -571,6 +571,49 @@ textarea {
   gap: 4px;
 }
 
+/* 打字特效 - 头像呼吸光晕 */
+.twilight-typing-avatar {
+  animation: twilight-typing-breathe 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(255, 159, 67, 0.4);
+}
+
+@keyframes twilight-typing-breathe {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 159, 67, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 8px rgba(255, 159, 67, 0);
+  }
+}
+
+/* 打字特效 - 跳动的小点 */
+.twilight-typing-dot {
+  animation: twilight-typing-bounce 1.2s ease-in-out infinite;
+}
+
+@keyframes twilight-typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  30% {
+    transform: translateY(-6px);
+    opacity: 1;
+  }
+}
+
+/* 隐藏横向滚动条但保留滚动功能 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* 会员中心 */
 .twilight-member-card {
   background: var(--twilight-surface);
