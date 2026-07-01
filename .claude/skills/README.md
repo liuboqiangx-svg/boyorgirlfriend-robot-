@@ -60,6 +60,7 @@
 |------|------|
 | frontend-design | 前端设计指导 |
 | browser-debug | 浏览器调试与问题诊断 |
+| api-debug | API 接口调试与更换 |
 
 ## Browser 浏览器技能 (1个)
 
