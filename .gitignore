@@ -1,0 +1,15 @@
+# ========== Claude Code ==========
+.claude/settings.json
+.claude/settings.local.json
+
+# ========== Agents ==========
+.agents/
+
+# ========== Skills ==========
+skills-lock.json
+
+# ========== macOS ==========
+.DS_Store
+
+# ========== Test/Development ==========
+纸片人男友test/

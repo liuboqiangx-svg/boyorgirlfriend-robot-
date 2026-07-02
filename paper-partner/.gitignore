@@ -24,6 +24,22 @@
 .DS_Store
 *.pem
 
+# database
+*.db
+*.db-shm
+*.db-wal
+
+# voice cache
+public/voice-cache/
+
+# test generated
+public/test-generated/
+
+# screenshots & previews
+*.png
+ui-preview.html
+ui-preview-screenshot.png
+
 # debug
 npm-debug.log*
 yarn-debug.log*
