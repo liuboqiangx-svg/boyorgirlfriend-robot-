@@ -73,7 +73,8 @@
       "Bash(curl -s http://localhost:3000/api/chat?characterId=xiao-xiao)",
       "Bash(curl -s -X POST http://localhost:3000/api/leaderboard -H \"Content-Type: application/json\" -d '{\"currentIntimacy\": 35, \"userId\": \"test-device-123\"}')",
       "Bash(lsof -ti:3000)",
-      "Bash(xargs kill -9)"
+      "Bash(xargs kill -9)",
+      "WebFetch(domain:boyorgirlfriend-robot.vercel.app)"
     ],
     "additionalDirectories": [
       "/Users/gg/Desktop/代码学习/纸片人男友test",
