@@ -63,7 +63,9 @@
       "Bash(curl -X POST http://localhost:3000/api/auth/portal/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' -v)",
       "Bash(curl -X POST http://localhost:3000/api/auth/portal/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
       "Bash(curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/portal/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
-      "Bash(curl -s -b cookies.txt http://localhost:3000/api/auth/portal/me)"
+      "Bash(curl -s -b cookies.txt http://localhost:3000/api/auth/portal/me)",
+      "Bash(curl -s http://localhost:3000/api/auth/logout -X POST -H \"Content-Type: application/json\" -c -)",
+      "mcp__chrome-devtools__new_page"
     ],
     "additionalDirectories": [
       "/Users/gg/Desktop/代码学习/纸片人男友test",

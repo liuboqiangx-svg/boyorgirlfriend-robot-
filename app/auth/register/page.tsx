@@ -126,22 +126,12 @@ export default function RegisterPage() {
             <p className="twilight-form-label">
               已有账号？{" "}
               <Link
-                href="/auth/login"
+                href="/"
                 className="text-orange-500 hover:text-orange-600 font-semibold"
               >
                 立即登录
               </Link>
             </p>
-          </div>
-
-          {/* 返回首页 */}
-          <div className="mt-4 text-center">
-            <Link
-              href="/"
-              className="text-sm text-amber-700 hover:text-amber-800"
-            >
-              返回首页
-            </Link>
           </div>
         </div>
       </div>

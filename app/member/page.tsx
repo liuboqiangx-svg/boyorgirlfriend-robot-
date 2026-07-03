@@ -53,8 +53,8 @@ export default function MemberPage() {
       const meData = await meRes.json();
 
       if (!meData.user) {
-        // 未登录，跳转到登录
-        window.location.href = "/auth/login";
+        // 未登录，跳转到登录页
+        window.location.href = "/";
         return;
       }
 

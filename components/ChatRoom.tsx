@@ -84,6 +84,20 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
     if (initRef.current) return;
     initRef.current = true;
 
+    // 0. 检查登录状态
+    try {
+      const authRes = await fetch("/api/auth/me");
+      const authData = await authRes.json();
+      if (!authData.user) {
+        // 未登录，跳转到首页（登录页）
+        window.location.href = "/";
+        return;
+      }
+    } catch {
+      window.location.href = "/";
+      return;
+    }
+
     // 1. 获取设备ID
     let id = localStorage.getItem("deviceId");
     if (!id) {

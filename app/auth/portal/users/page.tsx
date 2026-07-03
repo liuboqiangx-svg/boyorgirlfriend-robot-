@@ -8,8 +8,6 @@ import { LoadingSpinner, EmptyState, ErrorState } from "@/components/admin/Statu
 import { Pagination } from "@/components/admin/Pagination";
 import { Modal } from "@/components/admin/Modal";
 import { PORTAL_CONFIG } from "@/lib/config/portal";
-import { Pagination } from "@/components/admin/Pagination";
-import { Modal } from "@/components/admin/Modal";
 
 interface User {
   id: string;

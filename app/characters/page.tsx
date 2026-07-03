@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { ALL_CHARACTERS } from "@/lib/character";
 import type { CharacterProfile } from "@/types";
-import Link from "next/link";
 import ImmersiveScrollGallery from "@/components/ImmersiveScrollGallery";
 
 /**
@@ -16,6 +15,27 @@ export default function CharacterSelectPage() {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [entering, setEntering] = useState(false);
+  const [checking, setChecking] = useState(true);
+
+  // 检查登录状态
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch("/api/auth/me");
+      const data = await res.json();
+      if (!data.user) {
+        // 未登录，跳转到首页（登录页）
+        router.push("/");
+        return;
+      }
+      setChecking(false);
+    } catch {
+      router.push("/");
+    }
+  };
 
   // 选择角色并进入聊天
   const selectCharacter = (character: CharacterProfile) => {
@@ -27,28 +47,32 @@ export default function CharacterSelectPage() {
 
     // 延迟跳转，让动画完成
     setTimeout(() => {
-      window.location.href = "/";
+      window.location.href = "/chat";
     }, 500);
   };
+
+  // 检查中显示加载
+  if (checking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center twilight-gradient">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-600" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen twilight-gradient">
       {/* 顶部导航 */}
       <header className="fixed top-0 left-0 right-0 z-50 twilight-header-glass px-4 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-amber-700 hover:text-orange-600 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-            <span className="text-sm">返回</span>
-          </Link>
+        <div className="max-w-4xl mx-auto flex items-center justify-center">
           <h1 className="text-lg font-semibold twilight-card-name">
             选择你的TA
           </h1>
-          <div className="w-16" /> {/* 占位 */}
         </div>
       </header>
 
       {/* 沉浸式画廊区域 */}
-      <main className="relative">
+      <main className="relative pt-16">
         <ImmersiveScrollGallery
           characters={ALL_CHARACTERS}
           onSelect={selectCharacter}
