@@ -14,11 +14,10 @@ import {
   Loader2,
 } from "lucide-react";
 
-interface AdminUser {
+interface AdminInfo {
   id: string;
-  email: string;
+  username: string;
   name: string;
-  isAdmin: boolean;
 }
 
 interface AdminLayoutProps {
@@ -36,7 +35,7 @@ const navItems = [
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const [user, setUser] = useState<AdminUser | null>(null);
+  const [admin, setAdmin] = useState<AdminInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -48,27 +47,23 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       setLoading(false);
       return;
     }
-    checkAuth();
+    checkAdminAuth();
   }, [isLoginPage]);
 
-  const checkAuth = async () => {
+  const checkAdminAuth = async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      // 调用管理员认证检查接口
+      const res = await fetch("/api/admin/me");
       const data = await res.json();
 
-      if (!data.user) {
+      if (data.error) {
         router.push("/admin/login");
         return;
       }
 
-      if (!data.user.isAdmin) {
-        router.push("/admin/login");
-        return;
-      }
-
-      setUser(data.user);
+      setAdmin(data.admin);
     } catch (error) {
-      console.error("Auth check error:", error);
+      console.error("Admin auth check error:", error);
       router.push("/admin/login");
     } finally {
       setLoading(false);
@@ -78,7 +73,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch("/api/admin/logout", { method: "POST" });
       router.push("/admin/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -103,7 +98,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     );
   }
 
-  if (!user) {
+  if (!admin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
@@ -153,14 +148,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex items-center gap-3 mb-3">
             <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center">
               <span className="text-sm font-medium text-gray-600">
-                {user.name.charAt(0).toUpperCase()}
+                {admin.name.charAt(0).toUpperCase()}
               </span>
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-gray-900 truncate">
-                {user.name}
+                {admin.name}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user.email}</p>
+              <p className="text-xs text-gray-500 truncate">{admin.username}</p>
             </div>
           </div>
           <button
