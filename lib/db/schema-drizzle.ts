@@ -192,3 +192,22 @@ export const characterStates = pgTable(
     uniq: unique().on(table.userId, table.characterId),
   })
 );
+
+/**
+ * 排行榜记录表
+ */
+export const leaderboardRecords = pgTable(
+  "leaderboard_records",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(), // 用户ID（关联 users 表）
+    highestIntimacy: integer("highest_intimacy").notNull().default(0),
+    achievedAt: timestamp("achieved_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    uniq: unique().on(table.userId),
+  })
+);

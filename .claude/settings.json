@@ -65,7 +65,15 @@
       "Bash(curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/portal/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
       "Bash(curl -s -b cookies.txt http://localhost:3000/api/auth/portal/me)",
       "Bash(curl -s http://localhost:3000/api/auth/logout -X POST -H \"Content-Type: application/json\" -c -)",
-      "mcp__chrome-devtools__new_page"
+      "mcp__chrome-devtools__new_page",
+      "Bash(pnpm drizzle-kit *)",
+      "mcp__chrome-devtools__press_key",
+      "Bash(curl -s http://localhost:3000/api/leaderboard)",
+      "Bash(curl -s -b \"session_id=test\" -X POST http://localhost:3000/api/leaderboard -H \"Content-Type: application/json\" -d '{\"currentIntimacy\": 50}')",
+      "Bash(curl -s http://localhost:3000/api/chat?characterId=xiao-xiao)",
+      "Bash(curl -s -X POST http://localhost:3000/api/leaderboard -H \"Content-Type: application/json\" -d '{\"currentIntimacy\": 35, \"userId\": \"test-device-123\"}')",
+      "Bash(lsof -ti:3000)",
+      "Bash(xargs kill -9)"
     ],
     "additionalDirectories": [
       "/Users/gg/Desktop/代码学习/纸片人男友test",

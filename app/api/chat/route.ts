@@ -265,6 +265,20 @@ export async function POST(request: NextRequest) {
       next_proactive_at: new Date(Date.now() + 1000 * 60 * 20).toISOString(),
     });
 
+    // 更新排行榜（仅登录用户）
+    if (session?.userId) {
+      try {
+        await fetch(`${request.nextUrl.origin}/api/leaderboard`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Cookie": request.headers.get("cookie") || "" },
+          body: JSON.stringify({ currentIntimacy: newState?.intimacy || 0 }),
+        });
+      } catch (e) {
+        // 排行榜更新失败不影响主流程
+        console.error("更新排行榜失败:", e);
+      }
+    }
+
     return NextResponse.json({
       userMessage: userMsg,
       characterMessage: charMsg,

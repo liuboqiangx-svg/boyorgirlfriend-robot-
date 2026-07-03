@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trophy } from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
@@ -81,6 +81,15 @@ export default function HomePage() {
           </div>
 
           <form onSubmit={handleSubmit}>
+            {/* 排行榜入口 */}
+            <Link
+              href="/leaderboard"
+              className="flex items-center justify-center gap-2 mb-4 px-4 py-3 bg-amber-50 hover:bg-amber-100 text-amber-700 rounded-lg border border-amber-200 transition-colors"
+            >
+              <Trophy className="w-5 h-5 text-amber-500" />
+              <span className="font-medium">查看排行榜</span>
+            </Link>
+
             {error && (
               <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600 text-center">
                 {error}
