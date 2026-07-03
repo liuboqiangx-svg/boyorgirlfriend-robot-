@@ -7,6 +7,7 @@ import { RefreshCw } from "lucide-react";
 import { LoadingSpinner, EmptyState, ErrorState } from "@/components/admin/StatusComponents";
 import { Pagination } from "@/components/admin/Pagination";
 import { Modal } from "@/components/admin/Modal";
+import { PORTAL_CONFIG } from "@/lib/config/portal";
 
 interface Payment {
   id: string;
@@ -44,7 +45,7 @@ export default function PaymentsPage() {
       });
       if (statusFilter) params.set("status", statusFilter);
 
-      const res = await fetch(`/api/admin/payments?${params}`);
+      const res = await fetch(`/api/auth/portal/payments?${params}`);
       const data = await res.json();
 
       if (data.error) {
@@ -74,7 +75,7 @@ export default function PaymentsPage() {
     setSaving(true);
 
     try {
-      const res = await fetch("/api/admin/payments", {
+      const res = await fetch("/api/auth/portal/payments", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: editingPayment.id, status: editStatus }),

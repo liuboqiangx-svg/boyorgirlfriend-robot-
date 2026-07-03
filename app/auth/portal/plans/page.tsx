@@ -6,6 +6,7 @@ import { zhCN } from "date-fns/locale";
 import { RefreshCw, Plus, X } from "lucide-react";
 import { LoadingSpinner, EmptyState, ErrorState } from "@/components/admin/StatusComponents";
 import { Modal } from "@/components/admin/Modal";
+import { PORTAL_CONFIG } from "@/lib/config/portal";
 
 interface Plan {
   id: string;
@@ -43,7 +44,7 @@ export default function PlansPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/plans");
+      const res = await fetch("/api/auth/portal/plans");
       const data = await res.json();
 
       if (data.error) {
@@ -103,7 +104,7 @@ export default function PlansPage() {
         isActive: formIsActive,
       };
 
-      const res = await fetch("/api/admin/plans", {
+      const res = await fetch("/api/auth/portal/plans", {
         method: editingPlan ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editingPlan ? { id: editingPlan.id, ...body } : body),

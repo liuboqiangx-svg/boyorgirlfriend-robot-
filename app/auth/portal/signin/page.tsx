@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { PORTAL_CONFIG } from "@/lib/config/portal";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -17,7 +19,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch("/api/admin/login", {
+      const res = await fetch(PORTAL_CONFIG.apiLogin, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
@@ -28,7 +30,7 @@ export default function AdminLoginPage() {
       if (data.error) {
         setError(data.error);
       } else {
-        router.push("/admin");
+        router.push(PORTAL_CONFIG.home);
       }
     } catch (err) {
       setError("登录失败，请稍后重试");
@@ -92,12 +94,12 @@ export default function AdminLoginPage() {
           </form>
 
           <div className="mt-6 text-center">
-            <a
+            <Link
               href="/"
               className="text-sm text-gray-500 hover:text-gray-700"
             >
               返回首页
-            </a>
+            </Link>
           </div>
         </div>
       </div>

@@ -3,7 +3,6 @@ import { z } from "zod";
 import {
   verifyAdminLogin,
   createAdminSession,
-  createAdminSessionCookie,
 } from "@/lib/auth/admin";
 
 const loginSchema = z.object({
@@ -25,7 +24,6 @@ export async function POST(request: NextRequest) {
     }
 
     const session = createAdminSession(admin.id);
-    const cookie = createAdminSessionCookie(session);
 
     const response = NextResponse.json({
       success: true,
@@ -36,7 +34,15 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    response.headers.set("Set-Cookie", cookie);
+    // 设置 Cookie
+    const maxAge = Math.floor((session.expiresAt.getTime() - Date.now()) / 1000);
+    response.cookies.set("admin_session_id", session.id, {
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge,
+      path: "/",
+    });
+
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {

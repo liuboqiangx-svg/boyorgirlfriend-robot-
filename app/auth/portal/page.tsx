@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Users,
   CreditCard,
   DollarSign,
   MessageSquare,
-  TrendingUp,
-  TrendingDown,
 } from "lucide-react";
 import { LoadingSpinner, ErrorState } from "@/components/admin/StatusComponents";
+import { PORTAL_CONFIG } from "@/lib/config/portal";
 
 interface Stats {
   users: { total: number; today: number };
@@ -31,7 +31,7 @@ export default function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/stats");
+      const res = await fetch(PORTAL_CONFIG.apiStats);
       const data = await res.json();
       if (data.error) {
         setError(data.error);
@@ -114,17 +114,17 @@ export default function AdminDashboard() {
         <QuickAction
           title="用户管理"
           description="查看和管理所有用户账户"
-          href="/admin/users"
+          href={`${PORTAL_CONFIG.home}/users`}
         />
         <QuickAction
           title="订阅管理"
           description="查看和管理用户订阅"
-          href="/admin/subscriptions"
+          href={`${PORTAL_CONFIG.home}/subscriptions`}
         />
         <QuickAction
           title="套餐管理"
           description="配置订阅套餐"
-          href="/admin/plans"
+          href={`${PORTAL_CONFIG.home}/plans`}
         />
       </div>
     </div>
@@ -141,12 +141,12 @@ function QuickAction({
   href: string;
 }) {
   return (
-    <a
+    <Link
       href={href}
       className="bg-white rounded-xl border border-gray-200 p-6 hover:border-gray-300 transition-colors"
     >
       <h4 className="font-medium text-gray-900 mb-1">{title}</h4>
       <p className="text-sm text-gray-500">{description}</p>
-    </a>
+    </Link>
   );
 }

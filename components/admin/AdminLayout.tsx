@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Loader2,
 } from "lucide-react";
+import { PORTAL_CONFIG } from "@/lib/config/portal";
 
 interface AdminInfo {
   id: string;
@@ -24,12 +25,13 @@ interface AdminLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
-  { href: "/admin", label: "概览", icon: LayoutDashboard },
-  { href: "/admin/users", label: "用户管理", icon: Users },
-  { href: "/admin/subscriptions", label: "订阅管理", icon: CreditCard },
-  { href: "/admin/plans", label: "套餐管理", icon: Package },
-  { href: "/admin/payments", label: "订单管理", icon: FileText },
+// 动态生成导航项，使用配置路径
+const getNavItems = () => [
+  { href: PORTAL_CONFIG.home, label: "概览", icon: LayoutDashboard },
+  { href: `${PORTAL_CONFIG.home}/users`, label: "用户管理", icon: Users },
+  { href: `${PORTAL_CONFIG.home}/subscriptions`, label: "订阅管理", icon: CreditCard },
+  { href: `${PORTAL_CONFIG.home}/plans`, label: "套餐管理", icon: Package },
+  { href: `${PORTAL_CONFIG.home}/payments`, label: "订单管理", icon: FileText },
 ];
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
@@ -39,8 +41,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  const navItems = getNavItems();
+
   // 如果是登录页，跳过认证检查
-  const isLoginPage = pathname === "/admin/login";
+  const isLoginPage = pathname === PORTAL_CONFIG.login;
 
   useEffect(() => {
     if (isLoginPage) {
@@ -52,19 +56,18 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   const checkAdminAuth = async () => {
     try {
-      // 调用管理员认证检查接口
-      const res = await fetch("/api/admin/me");
+      const res = await fetch(PORTAL_CONFIG.apiMe);
       const data = await res.json();
 
       if (data.error) {
-        router.push("/admin/login");
+        router.push(PORTAL_CONFIG.login);
         return;
       }
 
       setAdmin(data.admin);
     } catch (error) {
       console.error("Admin auth check error:", error);
-      router.push("/admin/login");
+      router.push(PORTAL_CONFIG.login);
     } finally {
       setLoading(false);
     }
@@ -73,8 +76,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const handleLogout = async () => {
     setLoggingOut(true);
     try {
-      await fetch("/api/admin/logout", { method: "POST" });
-      router.push("/admin/login");
+      await fetch(PORTAL_CONFIG.apiLogout, { method: "POST" });
+      router.push(PORTAL_CONFIG.login);
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -124,7 +127,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             const Icon = item.icon;
             const isActive =
               pathname === item.href ||
-              (item.href !== "/admin" && pathname.startsWith(item.href));
+              (item.href !== PORTAL_CONFIG.home && pathname.startsWith(item.href));
 
             return (
               <Link
@@ -181,7 +184,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <span>管理后台</span>
             <ChevronRight className="w-4 h-4" />
             <span className="text-gray-900">
-              {navItems.find((item) => pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href)))?.label || ""}
+              {navItems.find((item) =>
+                pathname === item.href ||
+                (item.href !== PORTAL_CONFIG.home && pathname.startsWith(item.href))
+              )?.label || ""}
             </span>
           </div>
         </header>

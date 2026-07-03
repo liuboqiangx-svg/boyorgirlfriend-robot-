@@ -53,10 +53,22 @@
       "mcp__chrome-devtools__list_pages",
       "Bash(pnpm db:push)",
       "Bash(curl -X POST http://localhost:3001/api/admin/setup -H 'Content-Type: application/json' -d '{ *)",
-      "Bash(curl -X POST http://localhost:3001/api/auth/logout -H \"Cookie: session_id=test\")"
+      "Bash(curl -X POST http://localhost:3001/api/auth/logout -H \"Cookie: session_id=test\")",
+      "Bash(cd \"/Users/gg/Desktop/代码学习/纸片人男友test\" && mkdir -p app/auth/portal && mv app/admin/* app/auth/portal/ && rm -rf app/admin)",
+      "Bash(cd \"/Users/gg/Desktop/代码学习/纸片人男友test\" && mkdir -p app/api/auth/portal && mv app/api/admin/* app/api/auth/portal/ && rm -rf app/api/admin)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/auth/portal/signin)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/auth/portal/signin)",
+      "Bash(curl -s http://localhost:3000/auth/portal/signin)",
+      "Bash(curl -X POST http://localhost:3000/api/auth/portal/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}' -v)",
+      "Bash(curl -X POST http://localhost:3000/api/auth/portal/login -H 'Content-Type: application/json' -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(curl -s -c cookies.txt -X POST http://localhost:3000/api/auth/portal/login -H \"Content-Type: application/json\" -d '{\"username\":\"admin\",\"password\":\"admin123\"}')",
+      "Bash(curl -s -b cookies.txt http://localhost:3000/api/auth/portal/me)"
     ],
     "additionalDirectories": [
-      "/Users/gg/Desktop/代码学习/纸片人男友test"
+      "/Users/gg/Desktop/代码学习/纸片人男友test",
+      "/Users/gg/Desktop/代码学习/纸片人男友test/app/admin",
+      "/Users/gg/Desktop/代码学习/纸片人男友test/app/api/admin"
     ]
   }
 }
