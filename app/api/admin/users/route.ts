@@ -3,7 +3,7 @@ import { eq, like, or, and, desc, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema-drizzle";
-import { requireAdmin } from "@/lib/auth/middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-middleware";
 
 const updateUserSchema = z.object({
   status: z.enum(["active", "suspended"]).optional(),
@@ -12,7 +12,7 @@ const updateUserSchema = z.object({
 
 // 获取用户列表
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
 // 更新用户
 export async function PATCH(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {

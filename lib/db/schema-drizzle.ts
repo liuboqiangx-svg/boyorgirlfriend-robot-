@@ -158,6 +158,19 @@ export const memories = pgTable(
 );
 
 /**
+ * 管理员用户表（独立于普通用户）
+ */
+export const adminUsers = pgTable("admin_users", {
+  id: text("id").primaryKey(),
+  username: text("username").unique().notNull(),
+  passwordHash: text("password_hash").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
+/**
  * 角色状态表
  */
 export const characterStates = pgTable(

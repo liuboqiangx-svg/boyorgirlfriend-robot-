@@ -3,7 +3,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { payments, users, subscriptions } from "@/lib/db/schema-drizzle";
-import { requireAdmin } from "@/lib/auth/middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-middleware";
 
 const updateSchema = z.object({
   status: z.enum(["pending", "completed", "failed", "refunded"]).optional(),
@@ -11,7 +11,7 @@ const updateSchema = z.object({
 
 // 获取支付列表
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
 
 // 更新支付状态
 export async function PATCH(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {

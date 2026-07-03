@@ -3,7 +3,7 @@ import { eq, desc, and, like, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { subscriptions, users, subscriptionPlans } from "@/lib/db/schema-drizzle";
-import { requireAdmin } from "@/lib/auth/middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-middleware";
 
 const updateSchema = z.object({
   status: z.enum(["active", "expired", "cancelled", "pending"]).optional(),
@@ -13,7 +13,7 @@ const updateSchema = z.object({
 
 // 获取订阅列表
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {
@@ -69,7 +69,7 @@ export async function GET(request: NextRequest) {
 
 // 更新订阅
 export async function PATCH(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {

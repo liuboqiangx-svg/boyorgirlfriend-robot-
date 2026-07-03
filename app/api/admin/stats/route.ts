@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { count, gte, sql } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { users, subscriptions, payments, messages } from "@/lib/db/schema-drizzle";
-import { requireAdmin } from "@/lib/auth/middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-middleware";
 
 export async function GET(request: NextRequest) {
   // 管理员验证
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {

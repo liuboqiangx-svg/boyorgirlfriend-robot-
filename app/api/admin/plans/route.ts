@@ -3,7 +3,7 @@ import { eq, desc, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/lib/db/client";
 import { subscriptionPlans } from "@/lib/db/schema-drizzle";
-import { requireAdmin } from "@/lib/auth/middleware";
+import { requireAdminAuth } from "@/lib/auth/admin-middleware";
 import { v4 as uuidv4 } from "uuid";
 
 const planSchema = z.object({
@@ -20,7 +20,7 @@ const updatePlanSchema = planSchema.partial();
 
 // 获取套餐列表
 export async function GET(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
 
 // 创建套餐
 export async function POST(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
 // 更新套餐
 export async function PUT(request: NextRequest) {
-  const authError = await requireAdmin(request);
+  const authError = await requireAdminAuth(request);
   if (authError) return authError;
 
   try {

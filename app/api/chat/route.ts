@@ -14,6 +14,7 @@ import { MoodType } from "@/types";
 import { detectImageTrigger, inferSceneFromMessage } from "@/lib/image/trigger";
 import { getCharacterAvatarBase64 } from "@/lib/character-avatar";
 import { getImageService } from "@/lib/image/service";
+import { getSessionFromCookie, getUserById } from "@/lib/auth";
 
 /**
  * 同意/确认关键词
@@ -93,11 +94,34 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const characterId = searchParams.get("characterId") || DEFAULT_CHARACTER.id;
 
-  // 简单鉴权：使用 deviceId 作为用户标识
-  const deviceId = request.headers.get("x-device-id") || "anonymous";
-  const userId = deviceId;
+  // 用户验证
+  const sessionId = request.cookies.get("session_id")?.value;
+  const session = sessionId ? getSessionFromCookie(request.headers.get("cookie")) : null;
 
-  // 获取当前角色配置
+  if (!session) {
+    // 兼容旧设备 ID 方式（逐步迁移）
+    const deviceId = request.headers.get("x-device-id") || "anonymous";
+    const userId = deviceId;
+
+    const messages = await getMessages(userId, characterId, 100);
+    const state = await getCharacterState(userId, characterId);
+    await markMessagesAsRead(userId, characterId);
+
+    return NextResponse.json({
+      messages,
+      state,
+      mockMode: isMockMode(),
+      authRequired: true,
+    });
+  }
+
+  // 已登录用户
+  const user = await getUserById(session.userId);
+  if (!user) {
+    return NextResponse.json({ error: "用户不存在" }, { status: 401 });
+  }
+
+  const userId = user.id;
   const characterConfig = getCharacterById(characterId) || DEFAULT_CHARACTER;
 
   const messages = await getMessages(userId, characterId, 100);
@@ -109,6 +133,7 @@ export async function GET(request: NextRequest) {
     character: characterConfig,
     state,
     mockMode: isMockMode(),
+    authRequired: false,
   });
 }
 
@@ -123,8 +148,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "消息内容不能为空" }, { status: 400 });
     }
 
-    const deviceId = request.headers.get("x-device-id") || "anonymous";
-    const userId = deviceId;
+    // 用户验证
+    const sessionId = request.cookies.get("session_id")?.value;
+    const session = sessionId ? getSessionFromCookie(request.headers.get("cookie")) : null;
+
+    let userId: string;
+
+    if (!session) {
+      // 兼容旧设备 ID 方式（逐步迁移）
+      userId = request.headers.get("x-device-id") || "anonymous";
+    } else {
+      const user = await getUserById(session.userId);
+      if (!user) {
+        return NextResponse.json({ error: "用户不存在" }, { status: 401 });
+      }
+      userId = user.id;
+    }
+
     const charId = characterId || DEFAULT_CHARACTER.id;
 
     // 获取当前角色配置
