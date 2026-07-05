@@ -74,12 +74,15 @@
       "Bash(curl -s -X POST http://localhost:3000/api/leaderboard -H \"Content-Type: application/json\" -d '{\"currentIntimacy\": 35, \"userId\": \"test-device-123\"}')",
       "Bash(lsof -ti:3000)",
       "Bash(xargs kill -9)",
-      "WebFetch(domain:boyorgirlfriend-robot.vercel.app)"
+      "WebFetch(domain:boyorgirlfriend-robot.vercel.app)",
+      "Bash(mkdir -p /Users/gg/Desktop/代码学习/纸片人男友test/lib/email/templates)",
+      "Bash(kill 84900)"
     ],
     "additionalDirectories": [
       "/Users/gg/Desktop/代码学习/纸片人男友test",
       "/Users/gg/Desktop/代码学习/纸片人男友test/app/admin",
-      "/Users/gg/Desktop/代码学习/纸片人男友test/app/api/admin"
+      "/Users/gg/Desktop/代码学习/纸片人男友test/app/api/admin",
+      "/Users/gg/Desktop/代码学习/纸片人男友test/lib/email"
     ]
   }
 }

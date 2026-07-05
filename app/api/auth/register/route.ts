@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { users } from "@/lib/db/schema-drizzle";
 import { createUser, createSession, createSessionCookie } from "@/lib/auth";
+import { sendWelcomeEmail } from "@/lib/email/sender";
 
 const registerSchema = z.object({
   email: z.string().email("请输入有效的邮箱"),
@@ -33,6 +34,11 @@ export async function POST(request: NextRequest) {
     const user = await createUser(data.email, data.password, data.name);
     const session = createSession(user.id);
     const cookie = createSessionCookie(session);
+
+    // 发送欢迎邮件（异步，不影响注册结果）
+    sendWelcomeEmail(user.email || '', user.name || '用户').catch((err) => {
+      console.error("发送欢迎邮件失败:", err);
+    });
 
     const response = NextResponse.json({
       success: true,
