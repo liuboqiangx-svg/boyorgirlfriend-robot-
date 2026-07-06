@@ -13,6 +13,7 @@ import {
   messages,
   memories,
   characterStates,
+  emailLogs,
 } from "./schema-drizzle";
 import type {
   CharacterProfile,
@@ -433,3 +434,53 @@ export const upsertMemorySync = upsertMemory;
 export const getMemoriesSync = getMemories;
 export const getCharacterStateSync = getCharacterState;
 export const updateCharacterStateSync = updateCharacterState;
+
+// ============ 邮件日志相关============
+
+import { sql } from "drizzle-orm";
+
+/**
+ * 获取今天已发送过邮件的用户 ID 列表
+ */
+export async function getTodaySentUserIds(
+  emailType: "welcome" | "daily_morning"
+): Promise<string[]> {
+  // 获取今天的开始时间（北京时间）
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const result = await db
+    .select({ userId: emailLogs.userId })
+    .from(emailLogs)
+    .where(
+      and(
+        eq(emailLogs.emailType, emailType),
+        eq(emailLogs.status, "success"),
+        sql`${emailLogs.sentAt} >= ${today}`
+      )
+    );
+
+  return result.map((row) => row.userId);
+}
+
+/**
+ * 记录邮件发送日志
+ */
+export async function logEmailSent(
+  userId: string,
+  emailType: "welcome" | "daily_morning",
+  recipientEmail: string,
+  status: "success" | "failed",
+  errorMessage?: string
+): Promise<void> {
+  const id = uuidv4();
+  await db.insert(emailLogs).values({
+    id,
+    userId,
+    emailType,
+    recipientEmail,
+    status,
+    sentAt: new Date(),
+    errorMessage: errorMessage ?? null,
+  });
+}

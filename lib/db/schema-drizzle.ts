@@ -194,6 +194,30 @@ export const characterStates = pgTable(
 );
 
 /**
+ * 邮件日志表
+ */
+export const emailLogs = pgTable(
+  "email_logs",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    emailType: text("email_type").notNull(), // welcome | daily_morning
+    recipientEmail: text("recipient_email").notNull(),
+    status: text("status").notNull(), // success | failed
+    sentAt: timestamp("sent_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    errorMessage: text("error_message"),
+  },
+  (table) => ({
+    // 每天每个用户每种类型只发一次
+    uniq: unique().on(table.userId, table.emailType),
+  })
+);
+
+/**
  * 排行榜记录表
  */
 export const leaderboardRecords = pgTable(
