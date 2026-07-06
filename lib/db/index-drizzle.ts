@@ -438,6 +438,7 @@ export const updateCharacterStateSync = updateCharacterState;
 // ============ 邮件日志相关============
 
 import { sql } from "drizzle-orm";
+import { gt } from "drizzle-orm";
 
 /**
  * 获取今天已发送过邮件的用户 ID 列表
@@ -449,6 +450,9 @@ export async function getTodaySentUserIds(
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  // 将 Date 转为 ISO 字符串，用于 SQL 查询
+  const todayStr = today.toISOString();
+
   const result = await db
     .select({ userId: emailLogs.userId })
     .from(emailLogs)
@@ -456,7 +460,7 @@ export async function getTodaySentUserIds(
       and(
         eq(emailLogs.emailType, emailType),
         eq(emailLogs.status, "success"),
-        sql`${emailLogs.sentAt} >= ${today}`
+        gt(emailLogs.sentAt, new Date(todayStr))
       )
     );
 
