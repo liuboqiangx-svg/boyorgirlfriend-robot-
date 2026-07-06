@@ -20,6 +20,9 @@ importers:
       bcryptjs:
         specifier: ^3.0.3
         version: 3.0.3
+      crisp-sdk-web:
+        specifier: ^1.2.0
+        version: 1.2.0
       date-fns:
         specifier: ^4.4.0
         version: 4.4.0
@@ -1557,6 +1560,9 @@ packages:
   cors@2.8.6:
     resolution: {integrity: sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw==}
     engines: {node: '>= 0.10'}
+
+  crisp-sdk-web@1.2.0:
+    resolution: {integrity: sha512-R7hMEcm8vAOeJtx0odVtXfTQzgwObHCN+1affxDp82ajhm31fjsx6n/ruBnEHgESKv8719BBX5y+vQQKayEO2Q==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -4486,6 +4492,8 @@ snapshots:
     dependencies:
       object-assign: 4.1.1
       vary: 1.1.2
+
+  crisp-sdk-web@1.2.0: {}
 
   cross-spawn@7.0.6:
     dependencies:

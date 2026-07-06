@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { CrispProvider } from "@/components/CrispProvider";
 
 export const metadata: Metadata = {
   title: "纸片人 - AI 情感陪伴",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="antialiased h-dvh">
+        <CrispProvider />
         {children}
       </body>
     </html>

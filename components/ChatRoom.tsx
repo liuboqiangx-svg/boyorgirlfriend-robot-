@@ -9,6 +9,7 @@ import type { Message, CharacterProfile, CharacterState, MoodType } from "@/type
 import { MOOD_LABELS, MOOD_EMOJIS } from "@/types";
 import { getCharacterVoiceConfig, DEFAULT_CHARACTER } from "@/lib/character";
 import { CharacterSwitcher } from "./CharacterSwitcher";
+import { identifyUser } from "@/lib/crisp";
 
 interface MessageWithImage {
   id: string;
@@ -92,6 +93,14 @@ export default function ChatRoom({ onStateChange }: ChatRoomProps) {
         // 未登录，跳转到首页（登录页）
         window.location.href = "/";
         return;
+      }
+      // 同步用户身份到 Crisp
+      if (authData.user) {
+        identifyUser({
+          id: authData.user.id,
+          email: authData.user.email,
+          nickname: authData.user.name,
+        });
       }
     } catch {
       window.location.href = "/";
