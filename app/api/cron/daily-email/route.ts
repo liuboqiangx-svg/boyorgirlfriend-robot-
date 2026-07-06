@@ -13,9 +13,8 @@ import { getTodaySentUserIds, logEmailSent } from '@/lib/db/index-drizzle'
  * 由外部定时服务（如 cron-job.org）在每天早上触发
  */
 export async function GET(request: Request) {
-  // 1. 验证授权密钥
-  const { searchParams } = new URL(request.url)
-  const key = searchParams.get('key')
+  // 1. 验证授权密钥（从 Header 获取，避免密钥暴露在 URL 中）
+  const key = request.headers.get('x-cron-secret')
 
   if (key !== process.env.CRON_SECRET_KEY) {
     return NextResponse.json(
